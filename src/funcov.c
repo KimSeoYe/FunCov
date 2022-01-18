@@ -10,7 +10,7 @@
 
 #define INPUT_CNT_UNIT 512
 
-static cov_arg_t covarg ;
+static config_t conf ;
 
 /**
  * usage: ./funcov -i [input_dir] -x [executable_binary] [...]
@@ -25,12 +25,12 @@ static cov_arg_t covarg ;
 */
 
 void
-print_covarg ()
+print_config ()
 {
     printf("\nFUNCOV ARGS\n") ;
-    printf("* EXECUTABLE BINARY: %s\n", covarg.binary_path) ;
+    printf("* EXECUTABLE BINARY: %s\n", conf.binary_path) ;
     printf("* INPUT TYPE: ") ;
-    switch (covarg.input_type) {
+    switch (conf.input_type) {
     case STDIN:
         printf("stdin\n") ;
         break;
@@ -38,12 +38,12 @@ print_covarg ()
         printf("file as an argument\n") ;
         break;
     }
-    printf("* OUTPUT DIR PATH: %s\n", covarg.output_dir_path) ;
-    printf("* INPUT DIR PATH: %s\n", covarg.input_dir_path) ;
-    printf("* INPUT FILE CNT: %d\n", covarg.input_file_cnt) ;
+    printf("* OUTPUT DIR PATH: %s\n", conf.output_dir_path) ;
+    printf("* INPUT DIR PATH: %s\n", conf.input_dir_path) ;
+    printf("* INPUT FILE CNT: %d\n", conf.input_file_cnt) ;
     printf("* INPUT FILES\n") ;
-    for (int i = 0; i < covarg.input_file_cnt; i++) {
-        printf("  [%d] %s\n", i, covarg.input_files[i].file_path) ;
+    for (int i = 0; i < conf.input_file_cnt; i++) {
+        printf("  [%d] %s\n", i, conf.input_files[i].file_path) ;
     }
     printf("\n") ;
 }
@@ -58,7 +58,7 @@ get_cmd_args (int argc, char * argv[])
     while ((opt = getopt(argc, argv, "i:o:x:")) != -1) {
         switch(opt) {
         case 'i':
-            if (realpath(optarg, covarg.input_dir_path) == 0x0) {
+            if (realpath(optarg, conf.input_dir_path) == 0x0) {
                 perror("get_cmd_args: realpath: Invalid input directory") ;
                 return -1 ;
             }
@@ -70,10 +70,10 @@ get_cmd_args (int argc, char * argv[])
             if (access(optarg, F_OK) == -1) {
                 if (mkdir(optarg, 0777) == -1) {
                     perror("get_cmd_args: mkdir: Failed to make an output directory") ;
-                    exit(1) ;
+                    return -1 ;
                 }
             }
-            if (realpath(optarg, covarg.output_dir_path) == 0x0) {
+            if (realpath(optarg, conf.output_dir_path) == 0x0) {
                 perror("get_cmd_args: realpath: Invalid output directory") ;
                 return -1 ;
             }
@@ -82,7 +82,7 @@ get_cmd_args (int argc, char * argv[])
             break ;
 
         case 'x':
-            if (realpath(optarg, covarg.binary_path) == 0x0) {
+            if (realpath(optarg, conf.binary_path) == 0x0) {
                 perror("get_cmd_args: realpath: Invalid executable binary") ;
                 return -1 ;
             }
@@ -100,19 +100,42 @@ get_cmd_args (int argc, char * argv[])
 
     if (argc > 7) {
         if (strcmp(argv[arg_cnt], "@@") == 0) {
-            covarg.input_type = ARG_FILENAME ;
+            conf.input_type = ARG_FILENAME ;
             arg_cnt++ ;
         }
         else goto print_usage ;
     } 
     else {
-        covarg.input_type = STDIN ;
+        conf.input_type = STDIN ;
     }
 
     return 0 ;
 
 print_usage:
     perror("usage: ./funcov -i [input_dir] -x [executable_binary] [...]\n\nrequired\n-i : input directory path\n-o : output directory path\n-x : executable binary path\n\noptional\n@@ : input type - file as an argument") ;
+    return -1 ;
+}
+
+int
+set_output_dir ()
+{
+    char stdout_path[PATH_MAX + 4] ;
+    char stderr_path[PATH_MAX + 4] ;
+
+    sprintf(stdout_path, "%s/%s", conf.output_dir_path, "out") ;
+    sprintf(stderr_path, "%s/%s", conf.output_dir_path, "err") ;
+    
+    if (access(stdout_path, F_OK) == -1) {
+        if (mkdir(stdout_path, 0777) == -1) goto mkdir_err ;
+    }
+    if (access(stderr_path, F_OK) == -1) {
+        if (mkdir(stderr_path, 0777) == -1) goto mkdir_err ;
+    }
+
+    return 0 ;
+
+mkdir_err:
+    perror("set_output_dir: mkdir: Failed to set an output directory") ;
     return -1 ;
 }
 
@@ -124,46 +147,73 @@ read_input_dir ()
     DIR * dir_ptr = 0x0 ;
     struct dirent * entry = 0x0 ;
 
-    if ((dir_ptr = opendir(covarg.input_dir_path)) == 0x0) {
+    if ((dir_ptr = opendir(conf.input_dir_path)) == 0x0) {
         perror("read_input_dir: opendir") ;
         return -1 ;
     }
 
-    covarg.input_files = (input_t *) malloc(sizeof(input_t) * INPUT_CNT_UNIT) ;
+    conf.input_files = (input_t *) malloc(sizeof(input_t) * INPUT_CNT_UNIT) ;
 
     while ((entry = readdir(dir_ptr)) != 0x0) {
         if (file_cnt != 0x0 && file_cnt % INPUT_CNT_UNIT == 0) {
-            covarg.input_files = realloc(covarg.input_files, sizeof(input_t) * (file_cnt / INPUT_CNT_UNIT + 1) * INPUT_CNT_UNIT) ;
-            if (covarg.input_files == 0x0) {
+            conf.input_files = realloc(conf.input_files, sizeof(input_t) * (file_cnt / INPUT_CNT_UNIT + 1) * INPUT_CNT_UNIT) ;
+            if (conf.input_files == 0x0) {
                 perror("read_input_dir: realloc") ;
                 return -1 ;
             }
         }
         if (entry->d_name[0] != '.') {
-            sprintf(covarg.input_files[file_cnt].file_path, "%s/%s", covarg.input_dir_path, entry->d_name) ;
-            covarg.input_files[file_cnt].fun_cov = 0 ;
+            sprintf(conf.input_files[file_cnt].file_path, "%s/%s", conf.input_dir_path, entry->d_name) ;
+            conf.input_files[file_cnt].fun_cov = 0 ;
             file_cnt++ ;
         }
     }
     closedir(dir_ptr) ;
 
-    covarg.input_file_cnt = file_cnt ;
+    conf.input_file_cnt = file_cnt ;
     
     return 0 ;
+}
+
+
+// TODO. Implement run()
+
+static int stdin_pipe[2] ;
+static int stdout_pipe[2] ;
+static int stderr_pipe[2] ;
+
+int
+run ()
+{
+    if (pipe(stdin_pipe) != 0) goto pipe_err ;
+    if (pipe(stdout_pipe) != 0) goto pipe_err ;
+    if (pipe(stderr_pipe) != 0) goto pipe_err ;
+
+    return 0 ;
+
+pipe_err:
+    perror("run: pipe") ;
+    return -1 ;
 }
 
 int
 main (int argc, char * argv[])
 {
     if (get_cmd_args(argc, argv) == -1) return 1 ;
+    if (set_output_dir() == -1) return 1 ;
     if (read_input_dir() == -1) return 1 ;
-    print_covarg() ;
+    print_config() ;
 
     /**
      * execute
-     * get a log... => log 형식이 같아야 하는데, trace-pc.c를 제공해줘야 하나...
+     * get a log... 
+     *  => log 형식이 같아야 하는데, trace-pc.c를 제공해줘야 하나...
+     *  => instrumentation이 제대로 되어 있는지 확인할 방법이 없을지
     */
+    for (int i = 0; i < conf.input_file_cnt; i++) {
 
-    free(covarg.input_files) ;
+    }
+
+    if (conf.input_files != 0x0) free(conf.input_files) ;
     return 0 ;
 }

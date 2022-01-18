@@ -10,7 +10,7 @@ typedef struct input {
     int fun_cov ; // Q. need ?
 } input_t ;
 
-typedef struct cov_arg {    // Q. don't need to use a struct?
+typedef struct config {    // Q. don't need to use a struct?
     input_type_t input_type ;
     char binary_path[PATH_MAX] ;
     char input_dir_path[PATH_MAX] ;
@@ -19,7 +19,7 @@ typedef struct cov_arg {    // Q. don't need to use a struct?
     
     int input_file_cnt ;
     input_t * input_files ;
-} cov_arg_t ;
+} config_t ;
 
 // TODO. cov_stat
 
