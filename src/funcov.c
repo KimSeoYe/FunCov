@@ -61,9 +61,14 @@ get_cmd_args (int argc, char * argv[])
             i_flag = 1 ;
             arg_cnt += 2 ;
             break ;
+
         case 'x':
             if (realpath(optarg, covarg.binary_path) == 0x0) {
                 perror("get_cmd_args: realpath: Invalid executable binary") ;
+                return -1 ;
+            }
+            if (access(optarg, X_OK) == -1) {
+                perror("get_cmd_args: access: The target is not executable") ;
                 return -1 ;
             }
             x_flag = 1 ;
