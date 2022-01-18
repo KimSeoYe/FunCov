@@ -14,6 +14,7 @@ typedef struct cov_arg {    // Q. don't need to use a struct?
     input_type_t input_type ;
     char binary_path[PATH_MAX] ;
     char input_dir_path[PATH_MAX] ;
+    char output_dir_path[PATH_MAX] ;
     // TODO. result directory name
     
     int input_file_cnt ;

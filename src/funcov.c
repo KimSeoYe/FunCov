@@ -4,6 +4,8 @@
 #include <getopt.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "../include/funcov.h"
 
 #define INPUT_CNT_UNIT 512
@@ -15,6 +17,7 @@ static cov_arg_t covarg ;
  * 
  * required
  * -i : input directory path
+ * -o : output directory path
  * -x : executable binary path
  * 
  * optional
@@ -29,12 +32,13 @@ print_covarg ()
     printf("* INPUT TYPE: ") ;
     switch (covarg.input_type) {
     case STDIN:
-        printf("standard input\n") ;
+        printf("stdin\n") ;
         break;
     case ARG_FILENAME:
         printf("file as an argument\n") ;
         break;
     }
+    printf("* OUTPUT DIR PATH: %s\n", covarg.output_dir_path) ;
     printf("* INPUT DIR PATH: %s\n", covarg.input_dir_path) ;
     printf("* INPUT FILE CNT: %d\n", covarg.input_file_cnt) ;
     printf("* INPUT FILES\n") ;
@@ -47,11 +51,11 @@ print_covarg ()
 int
 get_cmd_args (int argc, char * argv[])
 {
-    int i_flag = 0, x_flag = 0 ;
+    int i_flag = 0, o_flag = 0, x_flag = 0 ;
     int arg_cnt = 1 ;
 
     int opt ;
-    while ((opt = getopt(argc, argv, "i:x:")) != -1) {
+    while ((opt = getopt(argc, argv, "i:o:x:")) != -1) {
         switch(opt) {
         case 'i':
             if (realpath(optarg, covarg.input_dir_path) == 0x0) {
@@ -59,6 +63,21 @@ get_cmd_args (int argc, char * argv[])
                 return -1 ;
             }
             i_flag = 1 ;
+            arg_cnt += 2 ;
+            break ;
+
+        case 'o':
+            if (access(optarg, F_OK) == -1) {
+                if (mkdir(optarg, 0777) == -1) {
+                    perror("get_cmd_args: mkdir: Failed to make an output directory") ;
+                    exit(1) ;
+                }
+            }
+            if (realpath(optarg, covarg.output_dir_path) == 0x0) {
+                perror("get_cmd_args: realpath: Invalid output directory") ;
+                return -1 ;
+            }
+            o_flag = 1 ;
             arg_cnt += 2 ;
             break ;
 
@@ -77,9 +96,9 @@ get_cmd_args (int argc, char * argv[])
         }
     }
 
-    if (!i_flag || !x_flag) goto print_usage ;
+    if (!i_flag || !o_flag || !x_flag) goto print_usage ;
 
-    if (argc > 5) {
+    if (argc > 7) {
         if (strcmp(argv[arg_cnt], "@@") == 0) {
             covarg.input_type = ARG_FILENAME ;
             arg_cnt++ ;
@@ -93,7 +112,7 @@ get_cmd_args (int argc, char * argv[])
     return 0 ;
 
 print_usage:
-    perror("usage: ./funcov -i [input_dir] -x [executable_binary] [...]\n\nrequired\n-i : input directory path\n-x : executable binary path\n\noptional\n@@ : input type - file as an argument") ;
+    perror("usage: ./funcov -i [input_dir] -x [executable_binary] [...]\n\nrequired\n-i : input directory path\n-o : output directory path\n-x : executable binary path\n\noptional\n@@ : input type - file as an argument") ;
     return -1 ;
 }
 
@@ -139,6 +158,11 @@ main (int argc, char * argv[])
     if (get_cmd_args(argc, argv) == -1) return 1 ;
     if (read_input_dir() == -1) return 1 ;
     print_covarg() ;
+
+    /**
+     * execute
+     * get a log... => log 형식이 같아야 하는데, trace-pc.c를 제공해줘야 하나...
+    */
 
     free(covarg.input_files) ;
     return 0 ;
