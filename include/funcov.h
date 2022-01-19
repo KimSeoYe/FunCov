@@ -15,6 +15,7 @@ typedef struct config {    // Q. don't need to use a struct?
     char binary_path[PATH_MAX] ;
     char input_dir_path[PATH_MAX] ;
     char output_dir_path[PATH_MAX] ;
+    char working_dir_path[PATH_MAX] ;
     // TODO. result directory name
     
     int input_file_cnt ;

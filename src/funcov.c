@@ -23,6 +23,7 @@ static config_t conf ;
  * -i : input directory path
  * -o : output directory path
  * -x : executable binary path
+ * -w : pwd
  * 
  * optional
  * @@ : input type - file as an argument
@@ -42,6 +43,7 @@ print_config ()
         printf("file as an argument\n") ;
         break;
     }
+    printf("* WORKING DIR PATH: %s\n", conf.working_dir_path) ;
     printf("* OUTPUT DIR PATH: %s\n", conf.output_dir_path) ;
     printf("* INPUT DIR PATH: %s\n", conf.input_dir_path) ;
     printf("* INPUT FILE CNT: %d\n", conf.input_file_cnt) ;
@@ -55,11 +57,11 @@ print_config ()
 int
 get_cmd_args (int argc, char * argv[])
 {
-    int i_flag = 0, o_flag = 0, x_flag = 0 ;
+    int i_flag = 0, o_flag = 0, x_flag = 0, w_flag = 0;
     int arg_cnt = 1 ;
 
     int opt ;
-    while ((opt = getopt(argc, argv, "i:o:x:")) != -1) {
+    while ((opt = getopt(argc, argv, "i:o:x:w:")) != -1) {
         switch(opt) {
         case 'i':
             if (realpath(optarg, conf.input_dir_path) == 0x0) {
@@ -97,12 +99,21 @@ get_cmd_args (int argc, char * argv[])
             x_flag = 1 ;
             arg_cnt += 2 ;
             break ;
+
+        case 'w':
+            if (realpath(optarg, conf.working_dir_path) == 0x0) {
+                perror("get_cmd_args: realpath: Invalid working directory") ;
+                return -1 ;
+            }
+            w_flag = 1 ;
+            arg_cnt += 2 ;
+            break ;
         }
     }
 
-    if (!i_flag || !o_flag || !x_flag) goto print_usage ;
+    if (!i_flag || !o_flag || !x_flag || !w_flag) goto print_usage ;
 
-    if (argc > 7) {
+    if (argc > 9) {
         if (strcmp(argv[arg_cnt], "@@") == 0) {
             conf.input_type = ARG_FILENAME ;
             arg_cnt++ ;
@@ -116,7 +127,7 @@ get_cmd_args (int argc, char * argv[])
     return 0 ;
 
 print_usage:
-    perror("usage: ./funcov -i [input_dir] -x [executable_binary] [...]\n\nrequired\n-i : input directory path\n-o : output directory path\n-x : executable binary path\n\noptional\n@@ : input type - file as an argument") ;
+    perror("usage: ./funcov -i [input_dir] -x [executable_binary] [...]\n\nrequired\n-i : input directory path\n-o : output directory path\n-x : executable binary path\n-w : pwd\n\noptional\n@@ : input type - file as an argument\n\n") ;
     return -1 ;
 }
 
@@ -217,6 +228,8 @@ execute_target (int turn)
 
     dup2(stdout_pipe[1], 1) ;
     dup2(stderr_pipe[1], 2) ;
+
+    chdir(conf.working_dir_path) ;
 
     if (conf.input_type == STDIN) {
         if (execl(conf.binary_path, conf.binary_path, (char *)0x0) == -1) {
