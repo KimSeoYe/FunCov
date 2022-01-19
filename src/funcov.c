@@ -12,7 +12,6 @@
 #include "../include/get_coverage.h"
 
 #define INPUT_CNT_UNIT 512
-#define BUF_SIZE 1024
 
 #define STDOUT_FD 1
 #define STDERR_FD 2
@@ -194,12 +193,16 @@ funcov_init (int argc, char * argv[])
 
     cov_stats = (cov_stat_t *) malloc(sizeof(cov_stat_t) * conf.input_file_cnt) ;
     for (int i = 0; i < conf.input_file_cnt; i++) {
+        cov_stats[i].fun_coverage = 0 ;
         cov_stats[i].bitmap_size = MAP_SIZE_UNIT ;
         cov_stats[i].bitmap = (uint8_t *) malloc(sizeof(uint8_t) * MAP_SIZE_UNIT) ;
+        memset(cov_stats[i].bitmap, 0, MAP_SIZE_UNIT) ;
     }
 
     trace_cov = (unsigned int *) malloc(sizeof(unsigned int) * MAP_SIZE_UNIT) ;
+    memset(trace_cov, 0, MAP_SIZE_UNIT) ;
     trace_bits = (uint8_t *) malloc(sizeof(uint8_t) * MAP_SIZE_UNIT) ;
+    memset(trace_bits, 0, MAP_SIZE_UNIT) ;
 }
 
 
@@ -360,7 +363,7 @@ void
 remove_cov_log()
 {
     char cov_log_path[PATH_MAX + 8] ;
-    sprintf(cov_log_path, "%s/cov.log", conf.output_dir_path) ;
+    sprintf(cov_log_path, "%s/%s", conf.output_dir_path, LOGNAME) ;
     if (remove(cov_log_path) == -1) {
         perror("remove_cov_log: remove") ;
         exit(1) ;
@@ -397,6 +400,7 @@ main (int argc, char * argv[])
 
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
         int exit_code = run(turn) ;    // TODO. use this exit_code?
+        
         get_cov_stat(&cov_stats[turn], &conf, turn, exit_code) ;
         // union, trace coverage
     }

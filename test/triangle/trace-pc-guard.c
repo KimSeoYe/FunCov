@@ -53,7 +53,7 @@ extern void __sanitizer_cov_trace_pc_guard(uint32_t *guard) {
 
   FILE * fp = fopen("cov.log", "ab") ;
   char log[2048] ;
-  sprintf(log, "guard:%p[%x] %s\n", guard, *guard, PcDescr) ;
+  sprintf(log, "%x[%p] %s\n", *guard, guard, PcDescr) ;
   fwrite(log, strlen(log), 1, fp) ;
   fclose(fp) ;
 }

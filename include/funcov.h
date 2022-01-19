@@ -2,6 +2,9 @@
 #define COVENGINE
 
 #define PATH_MAX 4096
+#define BUF_SIZE 1024
+
+#define LOGNAME "cov.log"
 
 typedef enum input_type { STDIN = 0, ARG_FILENAME } input_type_t ;
 
