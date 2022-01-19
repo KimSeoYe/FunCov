@@ -31,6 +31,131 @@ static config_t conf ;
 */
 
 void
+get_cmd_args (int argc, char * argv[])
+{
+    int i_flag = 0, o_flag = 0, x_flag = 0 ;
+    int arg_cnt = 1 ;
+
+    int opt ;
+    while ((opt = getopt(argc, argv, "i:o:x:")) != -1) {
+        switch(opt) {
+        case 'i':
+            if (realpath(optarg, conf.input_dir_path) == 0x0) {
+                perror("get_cmd_args: realpath: Invalid input directory") ;
+                exit(1) ;
+            }
+            i_flag = 1 ;
+            arg_cnt += 2 ;
+            break ;
+
+        case 'o':
+            if (access(optarg, F_OK) == -1) {
+                if (mkdir(optarg, 0777) == -1) {
+                    perror("get_cmd_args: mkdir: Failed to make an output directory") ;
+                    exit(1) ;
+                }
+            }
+            if (realpath(optarg, conf.output_dir_path) == 0x0) {
+                perror("get_cmd_args: realpath: Invalid output directory") ;
+                exit(1) ;
+            }
+            o_flag = 1 ;
+            arg_cnt += 2 ;
+            break ;
+
+        case 'x':
+            if (realpath(optarg, conf.binary_path) == 0x0) {
+                perror("get_cmd_args: realpath: Invalid executable binary") ;
+                exit(1) ;
+            }
+            if (access(optarg, X_OK) == -1) {
+                perror("get_cmd_args: access: The target is not executable") ;
+                exit(1) ;
+            }
+            x_flag = 1 ;
+            arg_cnt += 2 ;
+            break ;
+        }
+    }
+
+    if (!i_flag || !o_flag || !x_flag) goto print_usage ;
+
+    if (argc > 9) {
+        if (strcmp(argv[arg_cnt], "@@") == 0) {
+            conf.input_type = ARG_FILENAME ;
+            arg_cnt++ ;
+        }
+        else goto print_usage ;
+    } 
+    else {
+        conf.input_type = STDIN ;
+    }
+
+    return ;
+
+print_usage:
+    perror("\nusage: ./funcov -i [input_dir] -x [executable_binary] ...\n\nrequired\n-i : input directory path\n-o : output directory path\n-x : executable binary path\n\noptional\n@@ : input type - file as an argument\n\n") ;
+    exit(1) ;
+}
+
+void
+set_output_dir ()
+{
+    char stdout_path[PATH_MAX + 4] ;
+    char stderr_path[PATH_MAX + 4] ;
+
+    sprintf(stdout_path, "%s/%s", conf.output_dir_path, "out") ;
+    sprintf(stderr_path, "%s/%s", conf.output_dir_path, "err") ;
+    
+    if (access(stdout_path, F_OK) == -1) {
+        if (mkdir(stdout_path, 0777) == -1) goto mkdir_err ;
+    }
+    if (access(stderr_path, F_OK) == -1) {
+        if (mkdir(stderr_path, 0777) == -1) goto mkdir_err ;
+    }
+
+    return ;
+
+mkdir_err:
+    perror("set_output_dir: mkdir: Failed to set an output directory") ;
+    exit(1) ;
+}
+
+void
+read_input_dir ()
+{
+    int file_cnt = 0 ;
+
+    DIR * dir_ptr = 0x0 ;
+    struct dirent * entry = 0x0 ;
+
+    if ((dir_ptr = opendir(conf.input_dir_path)) == 0x0) {
+        perror("read_input_dir: opendir") ;
+        exit(1) ;
+    }
+
+    conf.input_files = (input_t *) malloc(sizeof(input_t) * INPUT_CNT_UNIT) ;
+
+    while ((entry = readdir(dir_ptr)) != 0x0) {
+        if (file_cnt != 0x0 && file_cnt % INPUT_CNT_UNIT == 0) {
+            conf.input_files = realloc(conf.input_files, sizeof(input_t) * (file_cnt / INPUT_CNT_UNIT + 1) * INPUT_CNT_UNIT) ;
+            if (conf.input_files == 0x0) {
+                perror("read_input_dir: realloc") ;
+                exit(1) ;
+            }
+        }
+        if (entry->d_name[0] != '.') {
+            sprintf(conf.input_files[file_cnt].file_path, "%s/%s", conf.input_dir_path, entry->d_name) ;
+            conf.input_files[file_cnt].fun_cov = 0 ;
+            file_cnt++ ;
+        }
+    }
+    closedir(dir_ptr) ;
+
+    conf.input_file_cnt = file_cnt ;
+}
+
+void
 print_config ()
 {
     printf("\nFUNCOV ARGS\n") ;
@@ -54,132 +179,15 @@ print_config ()
     printf("\n") ;
 }
 
-int
-get_cmd_args (int argc, char * argv[])
+void 
+funcov_init (int argc, char * argv[]) 
 {
-    int i_flag = 0, o_flag = 0, x_flag = 0 ;
-    int arg_cnt = 1 ;
-
-    int opt ;
-    while ((opt = getopt(argc, argv, "i:o:x:")) != -1) {
-        switch(opt) {
-        case 'i':
-            if (realpath(optarg, conf.input_dir_path) == 0x0) {
-                perror("get_cmd_args: realpath: Invalid input directory") ;
-                return -1 ;
-            }
-            i_flag = 1 ;
-            arg_cnt += 2 ;
-            break ;
-
-        case 'o':
-            if (access(optarg, F_OK) == -1) {
-                if (mkdir(optarg, 0777) == -1) {
-                    perror("get_cmd_args: mkdir: Failed to make an output directory") ;
-                    return -1 ;
-                }
-            }
-            if (realpath(optarg, conf.output_dir_path) == 0x0) {
-                perror("get_cmd_args: realpath: Invalid output directory") ;
-                return -1 ;
-            }
-            o_flag = 1 ;
-            arg_cnt += 2 ;
-            break ;
-
-        case 'x':
-            if (realpath(optarg, conf.binary_path) == 0x0) {
-                perror("get_cmd_args: realpath: Invalid executable binary") ;
-                return -1 ;
-            }
-            if (access(optarg, X_OK) == -1) {
-                perror("get_cmd_args: access: The target is not executable") ;
-                return -1 ;
-            }
-            x_flag = 1 ;
-            arg_cnt += 2 ;
-            break ;
-        }
-    }
-
-    if (!i_flag || !o_flag || !x_flag) goto print_usage ;
-
-    if (argc > 9) {
-        if (strcmp(argv[arg_cnt], "@@") == 0) {
-            conf.input_type = ARG_FILENAME ;
-            arg_cnt++ ;
-        }
-        else goto print_usage ;
-    } 
-    else {
-        conf.input_type = STDIN ;
-    }
-
-    return 0 ;
-
-print_usage:
-    perror("\nusage: ./funcov -i [input_dir] -x [executable_binary] ...\n\nrequired\n-i : input directory path\n-o : output directory path\n-x : executable binary path\n\noptional\n@@ : input type - file as an argument\n\n") ;
-    return -1 ;
+    get_cmd_args(argc, argv) ;  // TODO. just use exit(1) internally
+    set_output_dir() ;
+    read_input_dir() ;
+    print_config() ;
 }
 
-int
-set_output_dir ()
-{
-    char stdout_path[PATH_MAX + 4] ;
-    char stderr_path[PATH_MAX + 4] ;
-
-    sprintf(stdout_path, "%s/%s", conf.output_dir_path, "out") ;
-    sprintf(stderr_path, "%s/%s", conf.output_dir_path, "err") ;
-    
-    if (access(stdout_path, F_OK) == -1) {
-        if (mkdir(stdout_path, 0777) == -1) goto mkdir_err ;
-    }
-    if (access(stderr_path, F_OK) == -1) {
-        if (mkdir(stderr_path, 0777) == -1) goto mkdir_err ;
-    }
-
-    return 0 ;
-
-mkdir_err:
-    perror("set_output_dir: mkdir: Failed to set an output directory") ;
-    return -1 ;
-}
-
-int
-read_input_dir ()
-{
-    int file_cnt = 0 ;
-
-    DIR * dir_ptr = 0x0 ;
-    struct dirent * entry = 0x0 ;
-
-    if ((dir_ptr = opendir(conf.input_dir_path)) == 0x0) {
-        perror("read_input_dir: opendir") ;
-        return -1 ;
-    }
-
-    conf.input_files = (input_t *) malloc(sizeof(input_t) * INPUT_CNT_UNIT) ;
-
-    while ((entry = readdir(dir_ptr)) != 0x0) {
-        if (file_cnt != 0x0 && file_cnt % INPUT_CNT_UNIT == 0) {
-            conf.input_files = realloc(conf.input_files, sizeof(input_t) * (file_cnt / INPUT_CNT_UNIT + 1) * INPUT_CNT_UNIT) ;
-            if (conf.input_files == 0x0) {
-                perror("read_input_dir: realloc") ;
-                return -1 ;
-            }
-        }
-        if (entry->d_name[0] != '.') {
-            sprintf(conf.input_files[file_cnt].file_path, "%s/%s", conf.input_dir_path, entry->d_name) ;
-            conf.input_files[file_cnt].fun_cov = 0 ;
-            file_cnt++ ;
-        }
-    }
-    closedir(dir_ptr) ;
-
-    conf.input_file_cnt = file_cnt ;
-    
-    return 0 ;
-}
 
 static int stdin_pipe[2] ;
 static int stdout_pipe[2] ;
@@ -223,14 +231,16 @@ execute_target (int turn)
     chdir(conf.output_dir_path) ;
 
     if (conf.input_type == STDIN) {
-        if (execl(conf.binary_path, conf.binary_path, (char *)0x0) == -1) {
-            perror("execute_target: execl") ;
+        char * args[] = { conf.binary_path, "ASAN_OPTIONS=\'\'", (char *)0x0 } ;
+        if (execv(conf.binary_path, args) == -1) {
+            perror("execute_target: execv") ;
             exit(1) ;
         }
     } 
     else if (conf.input_type == ARG_FILENAME) {
-        if (execl(conf.binary_path, conf.binary_path, conf.input_files[turn].file_path, (char *)0x0) == -1) {
-            perror("execute_target: execl") ;
+        char * args[] = { conf.binary_path, conf.input_files[turn].file_path, "ASAN_OPTIONS=\'\'", (char *)0x0 } ;
+        if (execv(conf.binary_path, args) == -1) {
+            perror("execute_target: execv") ;
             exit(1) ;
         }
     }
@@ -300,7 +310,7 @@ save_results (int turn)
     write_result_file(turn, STDERR_FD) ;
 }
 
-int
+void
 run (int turn)
 {
     if (pipe(stdin_pipe) != 0) goto pipe_err ;
@@ -320,20 +330,28 @@ run (int turn)
         exit(1) ;
     }
 
-    return 0 ;
+    return ;
 
 pipe_err:
     perror("run: pipe") ;
     exit(1) ;
 }
 
+void
+remove_cov_log()
+{
+    char cov_log_path[PATH_MAX + 8] ;
+    sprintf(cov_log_path, "%s/cov.log", conf.output_dir_path) ;
+    if (remove(cov_log_path) == -1) {
+        perror("remove_cov_log: remove") ;
+        exit(1) ;
+    }
+}
+
 int
 main (int argc, char * argv[])
 {
-    if (get_cmd_args(argc, argv) == -1) return 1 ;  // TODO. just use exit(1) internally
-    if (set_output_dir() == -1) return 1 ;
-    if (read_input_dir() == -1) return 1 ;
-    print_config() ;
+    funcov_init(argc, argv) ;
 
     /**
      * execute
@@ -343,7 +361,13 @@ main (int argc, char * argv[])
     */
     for (int i = 0; i < conf.input_file_cnt; i++) {
         run(i) ;
+        // get a coverage results
     }
+
+    // print results
+    
+    // remove_cov_log() ;
+    
 
     if (conf.input_files != 0x0) free(conf.input_files) ;
     return 0 ;
