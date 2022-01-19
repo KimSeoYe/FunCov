@@ -9,6 +9,10 @@
 #include "../include/funcov.h"
 
 #define INPUT_CNT_UNIT 512
+#define BUF_SIZE 1024
+
+#define STDOUT_FD 1
+#define STDERR_FD 2
 
 static config_t conf ;
 
@@ -175,31 +179,154 @@ read_input_dir ()
     return 0 ;
 }
 
-
-// TODO. Implement run()
-
 static int stdin_pipe[2] ;
 static int stdout_pipe[2] ;
 static int stderr_pipe[2] ;
 
+void
+execute_target (int turn)
+{
+    FILE * fp = fopen(conf.input_files[turn].file_path, "rb") ;
+    if (fp == 0x0) {
+        perror("execute_target: fopen") ;
+        exit(1) ;
+    }
+    
+    if (conf.input_type == STDIN) {
+        while (!feof(fp)) {
+            char buf[BUF_SIZE] ;
+            int r_len = fread(buf, 1, sizeof(buf), fp) ;
+
+            char * buf_p = buf ;
+            int s ;
+            while (r_len > 0 && (s = write(stdin_pipe[1], buf_p, r_len)) > 0) {
+                buf_p += s ;
+                r_len -= s ;
+            }
+        }
+    }
+    fclose(fp) ;
+
+    close(stdin_pipe[1]) ;
+
+    dup2(stdin_pipe[0], 0) ;
+    
+    close(stdin_pipe[0]) ;
+    close(stdout_pipe[0]) ;
+    close(stderr_pipe[0]) ;
+
+    dup2(stdout_pipe[1], 1) ;
+    dup2(stderr_pipe[1], 2) ;
+
+    if (conf.input_type == STDIN) {
+        if (execl(conf.binary_path, conf.binary_path, (char *)0x0) == -1) {
+            perror("execute_target: execl") ;
+            exit(1) ;
+        }
+    } 
+    else if (conf.input_type == ARG_FILENAME) {
+        if (execl(conf.binary_path, conf.binary_path, conf.input_files[turn].file_path, (char *)0x0) == -1) {
+            perror("execute_target: execl") ;
+            exit(1) ;
+        }
+    }
+}
+
+void
+get_result_file_path (char * path, int turn, int fd)
+{
+    char input_filename[BUF_SIZE] ;
+    strcpy(input_filename, conf.input_files[turn].file_path + strlen(conf.input_dir_path) + 1) ;
+
+    switch (fd) {
+    case STDOUT_FD:
+        sprintf(path, "%s/%s/%s:out", conf.output_dir_path, "out", input_filename) ;
+        break;
+    
+    case STDERR_FD:
+        sprintf(path, "%s/%s/%s:err", conf.output_dir_path, "err", input_filename) ;
+        break;
+    }
+}
+
+void
+write_result_file (int turn, int fd)
+{
+    char path[PATH_MAX] ;
+    get_result_file_path(path, turn, fd) ;
+    
+    FILE * fp = fopen(path, "wb") ;
+    if (fp == 0x0) {
+        perror("write_result_file: fopen") ;
+        exit(1) ;
+    }
+
+    char buf[BUF_SIZE] ;
+    int s = 0 ;
+
+    if (fd == STDOUT_FD) {
+        while ((s = read(stdout_pipe[0], buf, BUF_SIZE)) > 0) {
+            if (fwrite(buf, 1, s, fp) != s) {
+                perror("write_result_file: fwrite: stdout") ;
+            }
+        }
+        close(stdout_pipe[0]) ;
+    }
+    else if (fd == STDERR_FD) {
+        while ((s = read(stderr_pipe[0], buf, BUF_SIZE)) > 0) {
+            if (fwrite(buf, 1, s, fp) != s) {
+                perror("write_result_file: fwrite: stderr") ;
+            }
+        }
+        close(stderr_pipe[0]) ;
+    }
+
+    fclose(fp) ;
+}
+
+void
+save_results (int turn)
+{
+    close(stdin_pipe[0]) ;
+    close(stdin_pipe[1]) ;
+    close(stdout_pipe[1]) ;
+    close(stderr_pipe[1]) ;
+
+    write_result_file(turn, STDOUT_FD) ;
+    write_result_file(turn, STDERR_FD) ;
+}
+
 int
-run ()
+run (int turn)
 {
     if (pipe(stdin_pipe) != 0) goto pipe_err ;
     if (pipe(stdout_pipe) != 0) goto pipe_err ;
     if (pipe(stderr_pipe) != 0) goto pipe_err ;
 
+    int child_pid = fork() ; // TODO. timeout handler
+
+    if (child_pid == 0) {
+        execute_target(turn) ;
+    }
+    else if (child_pid > 0) {
+        save_results(turn) ;
+    }
+    else {
+        perror("run: fork") ;
+        exit(1) ;
+    }
+
     return 0 ;
 
 pipe_err:
     perror("run: pipe") ;
-    return -1 ;
+    exit(1) ;
 }
 
 int
 main (int argc, char * argv[])
 {
-    if (get_cmd_args(argc, argv) == -1) return 1 ;
+    if (get_cmd_args(argc, argv) == -1) return 1 ;  // TODO. just use exit(1) internally
     if (set_output_dir() == -1) return 1 ;
     if (read_input_dir() == -1) return 1 ;
     print_config() ;
@@ -211,7 +338,7 @@ main (int argc, char * argv[])
      *  => instrumentation이 제대로 되어 있는지 확인할 방법이 없을지
     */
     for (int i = 0; i < conf.input_file_cnt; i++) {
-
+        run(i) ;
     }
 
     if (conf.input_files != 0x0) free(conf.input_files) ;
