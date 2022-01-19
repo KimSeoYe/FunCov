@@ -20,6 +20,4 @@ typedef struct config {    // Q. don't need to use a struct?
     input_t * input_files ;
 } config_t ;
 
-// TODO. cov_stat
-
 #endif

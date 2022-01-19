@@ -80,7 +80,7 @@ get_cmd_args (int argc, char * argv[])
 
     if (!i_flag || !o_flag || !x_flag) goto print_usage ;
 
-    if (argc > 9) {
+    if (argc > 7) {
         if (strcmp(argv[arg_cnt], "@@") == 0) {
             conf.input_type = ARG_FILENAME ;
             arg_cnt++ ;
@@ -230,15 +230,17 @@ execute_target (int turn)
 
     chdir(conf.output_dir_path) ;
 
+    // TODO. ASAN_OPTION
+
     if (conf.input_type == STDIN) {
-        char * args[] = { conf.binary_path, "ASAN_OPTIONS=\'\'", (char *)0x0 } ;
+        char * args[] = { conf.binary_path, (char *)0x0 } ;
         if (execv(conf.binary_path, args) == -1) {
             perror("execute_target: execv") ;
             exit(1) ;
         }
     } 
     else if (conf.input_type == ARG_FILENAME) {
-        char * args[] = { conf.binary_path, conf.input_files[turn].file_path, "ASAN_OPTIONS=\'\'", (char *)0x0 } ;
+        char * args[] = { conf.binary_path, conf.input_files[turn].file_path, (char *)0x0 } ;
         if (execv(conf.binary_path, args) == -1) {
             perror("execute_target: execv") ;
             exit(1) ;
