@@ -5,9 +5,11 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <sys/types.h>
 
 #include "../include/funcov.h"
+#include "../include/get_coverage.h"
 
 #define INPUT_CNT_UNIT 512
 #define BUF_SIZE 1024
@@ -16,6 +18,9 @@
 #define STDERR_FD 2
 
 static config_t conf ;
+static cov_stat_t * cov_stats ;
+static unsigned int * trace_cov ;
+static uint8_t * trace_bits ;
 
 /**
  * usage: ./funcov -i [input_dir] -x [executable_binary] -w [pwd] ...
@@ -186,6 +191,15 @@ funcov_init (int argc, char * argv[])
     set_output_dir() ;
     read_input_dir() ;
     print_config() ;
+
+    cov_stats = (cov_stat_t *) malloc(sizeof(cov_stat_t) * conf.input_file_cnt) ;
+    for (int i = 0; i < conf.input_file_cnt; i++) {
+        cov_stats[i].bitmap_size = MAP_SIZE_UNIT ;
+        cov_stats[i].bitmap = (uint8_t *) malloc(sizeof(uint8_t) * MAP_SIZE_UNIT) ;
+    }
+
+    trace_cov = (unsigned int *) malloc(sizeof(unsigned int) * MAP_SIZE_UNIT) ;
+    trace_bits = (uint8_t *) malloc(sizeof(uint8_t) * MAP_SIZE_UNIT) ;
 }
 
 
@@ -312,7 +326,7 @@ save_results (int turn)
     write_result_file(turn, STDERR_FD) ;
 }
 
-void
+int
 run (int turn)
 {
     if (pipe(stdin_pipe) != 0) goto pipe_err ;
@@ -332,7 +346,10 @@ run (int turn)
         exit(1) ;
     }
 
-    return ;
+    int exit_code ;
+    wait(&exit_code) ;
+
+    return exit_code ;
 
 pipe_err:
     perror("run: pipe") ;
@@ -350,6 +367,22 @@ remove_cov_log()
     }
 }
 
+void
+funcov_destroy ()
+{
+    // remove_cov_log() ;
+
+    if (conf.input_files != 0x0) free(conf.input_files) ;
+    for (int i = 0; i < conf.input_file_cnt; i++) {
+        free(cov_stats[i].bitmap) ;
+    }
+    free(cov_stats) ;
+    free(trace_cov) ;
+    free(trace_bits) ;
+
+    printf("WE ARE DONE!\n\n") ;
+}
+
 int
 main (int argc, char * argv[])
 {
@@ -361,16 +394,17 @@ main (int argc, char * argv[])
      *  => log 형식이 같아야 하는데, trace-pc.c를 제공해줘야 하나...
      *  => instrumentation이 제대로 되어 있는지 확인할 방법이 없을지
     */
-    for (int i = 0; i < conf.input_file_cnt; i++) {
-        run(i) ;
-        // get a coverage results
+
+    for (int turn = 0; turn < conf.input_file_cnt; turn++) {
+        int exit_code = run(turn) ;    // TODO. use this exit_code?
+        get_cov_stat(&cov_stats[turn], &conf, turn, exit_code) ;
+        // union, trace coverage
     }
 
     // print results
     
-    // remove_cov_log() ;
     
+    funcov_destroy() ;
 
-    if (conf.input_files != 0x0) free(conf.input_files) ;
     return 0 ;
 }
