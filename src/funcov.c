@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
 #include "../include/funcov.h"
 
 #define INPUT_CNT_UNIT 512
@@ -17,7 +18,7 @@
 static config_t conf ;
 
 /**
- * usage: ./funcov -i [input_dir] -x [executable_binary] [...]
+ * usage: ./funcov -i [input_dir] -x [executable_binary] -w [pwd] ...
  * 
  * required
  * -i : input directory path
@@ -127,7 +128,7 @@ get_cmd_args (int argc, char * argv[])
     return 0 ;
 
 print_usage:
-    perror("usage: ./funcov -i [input_dir] -x [executable_binary] [...]\n\nrequired\n-i : input directory path\n-o : output directory path\n-x : executable binary path\n-w : pwd\n\noptional\n@@ : input type - file as an argument\n\n") ;
+    perror("\nusage: ./funcov -i [input_dir] -x [executable_binary] -w [pwd] ...\n\nrequired\n-i : input directory path\n-o : output directory path\n-x : executable binary path\n-w : pwd\n\noptional\n@@ : input type - file as an argument\n\n") ;
     return -1 ;
 }
 
