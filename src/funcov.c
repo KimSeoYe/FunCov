@@ -19,7 +19,7 @@
 static config_t conf ;
 static cov_stat_t * cov_stats ;
 static unsigned int * trace_cov ;
-static uint8_t * trace_bits ;
+static trace_bits_t trace_bits ;
 
 /**
  * usage: ./funcov -i [input_dir] -x [executable_binary] -w [pwd] ...
@@ -201,8 +201,10 @@ funcov_init (int argc, char * argv[])
 
     trace_cov = (unsigned int *) malloc(sizeof(unsigned int) * MAP_SIZE_UNIT) ;
     memset(trace_cov, 0, MAP_SIZE_UNIT) ;
-    trace_bits = (uint8_t *) malloc(sizeof(uint8_t) * MAP_SIZE_UNIT) ;
-    memset(trace_bits, 0, MAP_SIZE_UNIT) ;
+
+    trace_bits.bitmap = (uint8_t *) malloc(sizeof(uint8_t) * MAP_SIZE_UNIT) ;
+    memset(trace_bits.bitmap, 0, MAP_SIZE_UNIT) ;
+    trace_bits.bitmap_size = MAP_SIZE_UNIT ; 
 }
 
 
@@ -381,7 +383,7 @@ funcov_destroy ()
     }
     free(cov_stats) ;
     free(trace_cov) ;
-    free(trace_bits) ;
+    free(trace_bits.bitmap) ;
 
     printf("WE ARE DONE!\n\n") ;
 }
@@ -402,11 +404,14 @@ main (int argc, char * argv[])
         int exit_code = run(turn) ;    // TODO. use this exit_code?
         
         get_cov_stat(&cov_stats[turn], &conf, turn, exit_code) ;
-        // union, trace coverage
+        trace_cov_stat(&trace_cov[turn], &trace_bits, &cov_stats[turn]) ;
     }
 
     // print results
-    
+    for (int turn = 0; turn < conf.input_file_cnt; turn++) {
+        printf("%d ", trace_cov[turn]) ;
+    }
+    printf("\n") ;
     
     funcov_destroy() ;
 
