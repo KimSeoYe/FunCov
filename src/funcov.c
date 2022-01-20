@@ -17,13 +17,17 @@
 #define STDOUT_FD 1
 #define STDERR_FD 2
 
+#define OUTDIR "out"
+#define ERRDIR "err"
+#define BITDIR "bitmaps"
+
 static config_t conf ;
 static cov_stat_t * cov_stats ;
 static unsigned int * trace_cov ;
 static trace_bits_t trace_bits ;
 
 /**
- * usage: ./funcov -i [input_dir] -x [executable_binary] -w [pwd] ...
+ * usage: ./funcov -i [input_dir] -o [output_dir] -x [executable_binary] ...
  * 
  * required
  * -i : input directory path
@@ -107,9 +111,11 @@ set_output_dir ()
 {
     char stdout_path[PATH_MAX + 4] ;
     char stderr_path[PATH_MAX + 4] ;
+    char bitmap_path[PATH_MAX + 16] ;
 
-    sprintf(stdout_path, "%s/%s", conf.output_dir_path, "out") ;
-    sprintf(stderr_path, "%s/%s", conf.output_dir_path, "err") ;
+    sprintf(stdout_path, "%s/%s", conf.output_dir_path, OUTDIR) ;
+    sprintf(stderr_path, "%s/%s", conf.output_dir_path, ERRDIR) ;
+    sprintf(bitmap_path, "%s/%s", conf.output_dir_path, BITDIR) ;
     
     if (access(stdout_path, F_OK) == -1) {
         if (mkdir(stdout_path, 0777) == -1) goto mkdir_err ;
@@ -291,11 +297,11 @@ get_result_file_path (char * path, int turn, int fd)
 
     switch (fd) {
     case STDOUT_FD:
-        sprintf(path, "%s/%s/%s:out", conf.output_dir_path, "out", input_filename) ;
+        sprintf(path, "%s/%s/%s", conf.output_dir_path, OUTDIR, input_filename) ;
         break;
     
     case STDERR_FD:
-        sprintf(path, "%s/%s/%s:err", conf.output_dir_path, "err", input_filename) ;
+        sprintf(path, "%s/%s/%s", conf.output_dir_path, ERRDIR, input_filename) ;
         break;
     }
 }
@@ -407,7 +413,7 @@ void
 print_cov_results ()
 {
     char cov_log_path[PATH_MAX + 32] ;
-    sprintf(cov_log_path, "%s/%s", conf.output_dir_path, "coverage_log.csv") ;
+    sprintf(cov_log_path, "%s/%s", conf.output_dir_path, "per_cov_log.csv") ;
 
     char trace_cov_path[PATH_MAX + 32] ;
     sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
