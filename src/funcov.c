@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <dirent.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -28,7 +29,6 @@ static trace_bits_t trace_bits ;
  * -i : input directory path
  * -o : output directory path
  * -x : executable binary path
- * -w : pwd
  * 
  * optional
  * @@ : input type - file as an argument
@@ -52,7 +52,7 @@ get_cmd_args (int argc, char * argv[])
             arg_cnt += 2 ;
             break ;
 
-        case 'o':
+        case 'o':   // TODO. default output dir
             if (access(optarg, F_OK) == -1) {
                 if (mkdir(optarg, 0777) == -1) {
                     perror("get_cmd_args: mkdir: Failed to make an output directory") ;
@@ -84,7 +84,7 @@ get_cmd_args (int argc, char * argv[])
 
     if (!i_flag || !o_flag || !x_flag) goto print_usage ;
 
-    if (argc > 7) {
+    if (argc > arg_cnt) { 
         if (strcmp(argv[arg_cnt], "@@") == 0) {
             conf.input_type = ARG_FILENAME ;
             arg_cnt++ ;
@@ -212,9 +212,25 @@ static int stdin_pipe[2] ;
 static int stdout_pipe[2] ;
 static int stderr_pipe[2] ;
 
+static int child_pid ;
+
+void
+timeout_handler (int sig)
+{
+    if (sig == SIGALRM) {
+        perror("timeout") ;
+        if (kill(child_pid, SIGINT) == -1) {
+            perror("timeout_handler: kill") ;
+            exit(1) ;
+        }
+    }
+}
+
 void
 execute_target (int turn)
 {
+    alarm(3) ;
+
     FILE * fp = fopen(conf.input_files[turn].file_path, "rb") ;
     if (fp == 0x0) {
         perror("execute_target: fopen") ;
@@ -338,7 +354,7 @@ run (int turn)
     if (pipe(stdout_pipe) != 0) goto pipe_err ;
     if (pipe(stderr_pipe) != 0) goto pipe_err ;
 
-    int child_pid = fork() ; // TODO. timeout handler
+    child_pid = fork() ; // TODO. timeout handler
 
     if (child_pid == 0) {
         execute_target(turn) ;
@@ -364,14 +380,40 @@ pipe_err:
 void
 print_cov_results ()
 {
-    // print results
-    // for (int turn = 0; turn < conf.input_file_cnt; turn++) {
-    //     printf("%d ", trace_cov[turn]) ;
-    // }
-    // printf("\n") ;
+    char cov_log_path[PATH_MAX + 32] ;
+    sprintf(cov_log_path, "%s/%s", conf.output_dir_path, "coverage_log.csv") ;
+
+    char trace_cov_path[PATH_MAX + 32] ;
+    sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
 
     printf("RESULTS\n") ;
+    printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
+    printf("* TOTAL COVERAGE: %d\n", trace_cov[conf.input_file_cnt - 1]) ;
+    printf("* LOG SAVED IN %s\n", cov_log_path) ;
+    printf("* ACCUMULATED LOG SAVED IN %s\n", trace_cov_path) ;
+    printf("\n") ;
 
+    FILE * fp = fopen(cov_log_path, "wb") ;
+    if (fp == 0x0) {
+        perror("print_cov_results: fopen") ;
+        exit(1) ;
+    }
+    fprintf(fp, "id,fun_cov,exit_code\n") ;
+    for (int i = 0; i < conf.input_file_cnt; i++) {
+        fprintf(fp, "%d,%d,%d\n", cov_stats[i].id, cov_stats[i].fun_coverage, cov_stats[i].exit_code) ;
+    }
+    fclose(fp) ;
+
+    fp = fopen(trace_cov_path, "wb") ;
+    if (fp == 0x0) {
+        perror("print_cov_results: fopen") ;
+        exit(1) ;
+    }
+    fprintf(fp, "id,accumulated_cov\n") ;
+    for (int i = 0; i < conf.input_file_cnt; i++) {
+        fprintf(fp, "%d,%d\n", cov_stats[i].id, trace_cov[i]) ;
+    }
+    fclose(fp) ;
 }
 
 void
@@ -391,10 +433,12 @@ funcov_destroy ()
     // remove_cov_log() ;
 
     if (conf.input_files != 0x0) free(conf.input_files) ;
+    // BUG: double free
     for (int i = 0; i < conf.input_file_cnt; i++) {
         free(cov_stats[i].bitmap) ;
     }
     free(cov_stats) ;
+
     free(trace_cov) ;
     free(trace_bits.bitmap) ;
 
@@ -404,19 +448,28 @@ funcov_destroy ()
 int
 main (int argc, char * argv[])
 {
+    signal(SIGALRM, timeout_handler) ;
+
     funcov_init(argc, argv) ;
 
     /**
      *  Q. log 형식이 같아야 하는데, trace-pc.c를 제공해줘야 하나...
      *  Q. instrumentation이 제대로 되어 있는지 확인할 방법이 없을지
+     * 
+     *  TODO. seed당 "어떤 function이 실행되었는지" 알아야 함.
     */
 
+    printf("RUN\n") ;
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
-        int exit_code = run(turn) ;    
+        printf("* [%d] execute w/ %s : ", turn, conf.input_files[turn].file_path) ;
+        int exit_code = run(turn) ; // TODO. save cov.logs into a directory
         
         conf.input_files[turn].fun_cov = get_cov_stat(&cov_stats[turn], &conf, turn, exit_code) ; 
+        printf("cov=%d, ", conf.input_files[turn].fun_cov) ;
         trace_cov_stat(&trace_cov[turn], &trace_bits, &cov_stats[turn]) ;
+        printf("acc_cov=%d\n", trace_cov[turn]) ;
     }
+    printf("\n") ;
 
     print_cov_results() ;  
     

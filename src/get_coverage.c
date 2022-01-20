@@ -59,8 +59,9 @@ get_cov_stat (cov_stat_t * stat, config_t * conf, int turn, int exit_code)
     stat->exit_code = exit_code ;
 
     stat->bitmap = get_bitmap(stat, conf, turn) ;
+    stat->fun_coverage = get_cov_value(stat) ;
     
-    return get_cov_value(stat) ;
+    return stat->fun_coverage ;
 }
 
 void

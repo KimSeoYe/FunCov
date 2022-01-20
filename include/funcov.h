@@ -10,7 +10,7 @@ typedef enum input_type { STDIN = 0, ARG_FILENAME } input_type_t ;
 
 typedef struct input {
     char file_path[PATH_MAX] ;
-    int fun_cov ; // Q. need ?
+    int fun_cov ; // Q. need ? => TODO. X
 } input_t ;
 
 typedef struct config {    // Q. don't need to use a struct?
