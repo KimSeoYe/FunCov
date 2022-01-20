@@ -49,7 +49,7 @@ get_cov_value (cov_stat_t * stat)
     for (int i = 0; i < stat->bitmap_size; i++) {
         if (stat->bitmap[i] != 0) cov_val++ ;
     }
-    return cov_val ;
+    return cov_val ; 
 }
 
 int

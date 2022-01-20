@@ -301,14 +301,14 @@ get_result_file_path (char * path, int turn, int fd)
 }
 
 void
-write_result_file (int turn, int fd)
+write_out_file (int turn, int fd)
 {
     char path[PATH_MAX] ;
     get_result_file_path(path, turn, fd) ;
     
     FILE * fp = fopen(path, "wb") ;
     if (fp == 0x0) {
-        perror("write_result_file: fopen") ;
+        perror("write_out_file: fopen") ;
         exit(1) ;
     }
 
@@ -318,7 +318,7 @@ write_result_file (int turn, int fd)
     if (fd == STDOUT_FD) {
         while ((s = read(stdout_pipe[0], buf, BUF_SIZE)) > 0) {
             if (fwrite(buf, 1, s, fp) != s) {
-                perror("write_result_file: fwrite: stdout") ;
+                perror("write_out_file: fwrite: stdout") ;
             }
         }
         close(stdout_pipe[0]) ;
@@ -326,7 +326,7 @@ write_result_file (int turn, int fd)
     else if (fd == STDERR_FD) {
         while ((s = read(stderr_pipe[0], buf, BUF_SIZE)) > 0) {
             if (fwrite(buf, 1, s, fp) != s) {
-                perror("write_result_file: fwrite: stderr") ;
+                perror("write_out_file: fwrite: stderr") ;
             }
         }
         close(stderr_pipe[0]) ;
@@ -343,8 +343,8 @@ save_results (int turn)
     close(stdout_pipe[1]) ;
     close(stderr_pipe[1]) ;
 
-    write_result_file(turn, STDOUT_FD) ;
-    write_result_file(turn, STDERR_FD) ;
+    write_out_file(turn, STDOUT_FD) ; // Q. need?
+    write_out_file(turn, STDERR_FD) ;
 }
 
 int
@@ -378,21 +378,8 @@ pipe_err:
 }
 
 void
-print_cov_results ()
+write_result_csv (char * cov_log_path, char * trace_cov_path)
 {
-    char cov_log_path[PATH_MAX + 32] ;
-    sprintf(cov_log_path, "%s/%s", conf.output_dir_path, "coverage_log.csv") ;
-
-    char trace_cov_path[PATH_MAX + 32] ;
-    sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
-
-    printf("RESULTS\n") ;
-    printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
-    printf("* TOTAL COVERAGE: %d\n", trace_cov[conf.input_file_cnt - 1]) ;
-    printf("* LOG SAVED IN %s\n", cov_log_path) ;
-    printf("* ACCUMULATED LOG SAVED IN %s\n", trace_cov_path) ;
-    printf("\n") ;
-
     FILE * fp = fopen(cov_log_path, "wb") ;
     if (fp == 0x0) {
         perror("print_cov_results: fopen") ;
@@ -417,6 +404,25 @@ print_cov_results ()
 }
 
 void
+print_cov_results ()
+{
+    char cov_log_path[PATH_MAX + 32] ;
+    sprintf(cov_log_path, "%s/%s", conf.output_dir_path, "coverage_log.csv") ;
+
+    char trace_cov_path[PATH_MAX + 32] ;
+    sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
+
+    printf("RESULTS\n") ;
+    printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
+    printf("* TOTAL COVERAGE: %d\n", trace_cov[conf.input_file_cnt - 1]) ;
+    printf("* LOG SAVED IN %s\n", cov_log_path) ;
+    printf("* ACCUMULATED LOG SAVED IN %s\n", trace_cov_path) ;
+    printf("\n") ;
+
+    write_result_csv(cov_log_path, trace_cov_path) ;
+}
+
+void
 remove_cov_log()
 {
     char cov_log_path[PATH_MAX + 8] ;
@@ -430,7 +436,7 @@ remove_cov_log()
 void
 funcov_destroy ()
 {
-    // remove_cov_log() ;
+    remove_cov_log() ;
 
     if (conf.input_files != 0x0) free(conf.input_files) ;
     // BUG: double free
@@ -461,7 +467,7 @@ main (int argc, char * argv[])
 
     printf("RUN\n") ;
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
-        printf("* [%d] execute w/ %s : ", turn, conf.input_files[turn].file_path) ;
+        printf("* [%d] %s: ", turn, conf.input_files[turn].file_path) ;
         int exit_code = run(turn) ; // TODO. save cov.logs into a directory
         
         conf.input_files[turn].fun_cov = get_cov_stat(&cov_stats[turn], &conf, turn, exit_code) ; 
