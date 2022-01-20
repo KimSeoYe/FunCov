@@ -1,0 +1,6 @@
+s: 0
+((<S> <!>) (<S> (')' whitespace)))
+<?>
+<?>
+((<S> (((start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) ' ' 'e' 'x' 'p' 'r' 'e' 's' (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) (start of input <#>) 's' 'i' 'o' 'n' ' ' ':' ' ' '<' 'p' 'r' 'o' 'd' 'u' 'c' 't' '>' ' '? '?'? '?'? '?'? '?' 'X'? '?'? '\' '+'+ '+' ' ' '\' '\' '\' alphanumeric!) whitespace)) | ((<S> <expression>) (<S> (')' whitespace))))
+./math_exprs/readme.maths: error: Unable to open file!

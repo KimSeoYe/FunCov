@@ -1,0 +1,48 @@
+
+=================================================================
+==31309==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 72 byte(s) in 1 object(s) allocated from:
+    #0 0x4d9e60  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x4d9e60)
+    #1 0x537d18  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x537d18)
+    #2 0x53d966  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x53d966)
+    #3 0x519258  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x519258)
+    #4 0x513ef1  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x513ef1)
+    #5 0x531787  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x531787)
+    #6 0x532120  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x532120)
+    #7 0x5125fe  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x5125fe)
+    #8 0x7f10b5ac7bf6  (/lib/x86_64-linux-gnu/libc.so.6+0x21bf6)
+
+Indirect leak of 384 byte(s) in 6 object(s) allocated from:
+    #0 0x4d9e60  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x4d9e60)
+    #1 0x518d0f  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x518d0f)
+    #2 0x518e6e  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x518e6e)
+    #3 0x513efd  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x513efd)
+    #4 0x531787  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x531787)
+    #5 0x532120  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x532120)
+    #6 0x5125fe  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x5125fe)
+    #7 0x7f10b5ac7bf6  (/lib/x86_64-linux-gnu/libc.so.6+0x21bf6)
+
+Indirect leak of 64 byte(s) in 1 object(s) allocated from:
+    #0 0x4d9e60  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x4d9e60)
+    #1 0x518d0f  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x518d0f)
+    #2 0x518fc2  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x518fc2)
+    #3 0x513efd  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x513efd)
+    #4 0x531787  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x531787)
+    #5 0x532120  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x532120)
+    #6 0x5125fe  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x5125fe)
+    #7 0x7f10b5ac7bf6  (/lib/x86_64-linux-gnu/libc.so.6+0x21bf6)
+
+Indirect leak of 48 byte(s) in 1 object(s) allocated from:
+    #0 0x4da2e0  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x4da2e0)
+    #1 0x53a728  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x53a728)
+    #2 0x53e906  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x53e906)
+    #3 0x53e4e7  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x53e4e7)
+    #4 0x519258  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x519258)
+    #5 0x513ef1  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x513ef1)
+    #6 0x531787  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x531787)
+    #7 0x532120  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x532120)
+    #8 0x5125fe  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x5125fe)
+    #9 0x7f10b5ac7bf6  (/lib/x86_64-linux-gnu/libc.so.6+0x21bf6)
+
+SUMMARY: AddressSanitizer: 568 byte(s) leaked in 9 allocation(s).

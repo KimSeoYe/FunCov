@@ -1,0 +1,7 @@
+s: 0
+((<S> <product>) (((<S> ('+' whitespace)) | (<S> ('ö' whitespace))) (<S> <!>))*)
+((<S> <value>)* ((<S> ('*' whitespace)) | (<S> ('=' whitespace)))* (<S> (<#> whitespace)) (<S> (<#> whitespace)) (<S> <expression>) (<S> (')' whitespace)))
+<?>
+(((<S> ((start of input <#>) whitespace)) (<S> <expression>) (<S> (('u' 'c' 't' '>' ' ' (' ' '<' 'p' 'r' 'o' 'd' 'u' 'c' 't' '>')* ';' ' ' '
+' ' ' 'p' 'r' 'o' 'd' 'u' 'c' 't' ' ' 'e' 'x' 'p' 'e' 'O' 'm' ' ' ':' ' ' ']'+) whitespace))) | ((<S> ('(' whitespace)) (<S> <expression>) (<S> (')' whitespace))))
+./math_exprs/readme.maths: error: Unable to open file!

@@ -1,0 +1,6 @@
+s: 0
+((<S> <product>) (((<S> ('+' whitespace)) | (<S> ('-' whitespace))) (<S> <product>))*)
+((<S> <value>) (((<S> ('*' whitespace)) | (<S> ('/' whitespace))) (<S> <value>))*)
+((<S> (('*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* ''* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'? '*'* '*'* '*' one of '0123456789'+) whitespace)) | ((<S> ('(' whitespace)) (<S> <expression>) (<S> (')' whitespace))))
+((<S> ((start of input <#>) whitespace)) (<S> <expression>) (<S> ((((newline end of input) | (end of input <#>))* '*'* ''* '*'* '*'* '@'* '*'? '*'* '›'* '*'* '*'* '*') whitespace)))
+./math_exprs/readme.maths: error: Unable to open file!

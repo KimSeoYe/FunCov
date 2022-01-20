@@ -1,0 +1,71 @@
+=================================================================
+==16903==ERROR: AddressSanitizer: stack-buffer-underflow on address 0x7ffc64aa1860 at pc 0x00000053f5b6 bp 0x7ffc64a943e0 sp 0x7ffc64a943d8
+READ of size 8 at 0x7ffc64aa1860 thread T0
+    #0 0x53f5b5  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x53f5b5)
+    #1 0x530676  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x530676)
+    #2 0x538bce  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x538bce)
+    #3 0x515c8d  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x515c8d)
+    #4 0x517fbd  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x517fbd)
+    #5 0x51860e  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x51860e)
+    #6 0x5171e9  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x5171e9)
+    #7 0x51860e  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x51860e)
+    #8 0x51860e  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x51860e)
+    #9 0x51860e  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x51860e)
+    #10 0x517fbd  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x517fbd)
+    #11 0x51860e  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x51860e)
+    #12 0x5171e9  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x5171e9)
+    #13 0x51860e  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x51860e)
+    #14 0x51860e  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x51860e)
+    #15 0x516e3a  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x516e3a)
+    #16 0x516723  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x516723)
+    #17 0x51860e  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x51860e)
+    #18 0x51860e  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x51860e)
+    #19 0x515b96  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x515b96)
+    #20 0x513d99  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x513d99)
+    #21 0x531787  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x531787)
+    #22 0x532120  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x532120)
+    #23 0x5125fe  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x5125fe)
+    #24 0x7fcbfc608bf6  (/lib/x86_64-linux-gnu/libc.so.6+0x21bf6)
+    #25 0x419fa9  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x419fa9)
+
+Address 0x7ffc64aa1860 is located in stack of thread T0 at offset 0 in frame
+    #0 0x51237f  (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x51237f)
+
+  This frame has 2 object(s):
+    [32, 40) 'r' (line 7)
+    [64, 1088) 'language' (line 14)
+HINT: this may be a false positive if your program uses some custom stack unwind mechanism or swapcontext
+      (longjmp and C++ exceptions *are* supported)
+SUMMARY: AddressSanitizer: stack-buffer-underflow (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x53f5b5) 
+Shadow bytes around the buggy address:
+  0x10000c94c2b0: f2 f2 f2 f2 00 00 00 f3 f3 f3 f3 f3 00 00 00 00
+  0x10000c94c2c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10000c94c2d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10000c94c2e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10000c94c2f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x10000c94c300: 00 00 00 00 00 00 00 00 00 00 00 00[f1]f1 f1 f1
+  0x10000c94c310: 00 f2 f2 f2 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10000c94c320: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10000c94c330: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10000c94c340: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x10000c94c350: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==16903==ABORTING

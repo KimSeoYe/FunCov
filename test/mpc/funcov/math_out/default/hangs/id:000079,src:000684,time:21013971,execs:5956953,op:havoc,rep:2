@@ -1,3 +1,0 @@
-sZuct : <valee>   (('*' | '-') <66>   (('' | '/')   <v>   (('' |' | '-') <pduct>); 
- maths : /^/ *; 
- product : <valee>   (('*' | '/')   <value>)*;

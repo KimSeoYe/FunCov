@@ -1,3 +1,0 @@
- expression : <product> (('+' | '-') <product>)*; 
- product : <value>   (('*' | '/')   <value>)*;
- value : /[0-ü]+/ | '(' <expres/^/ <expression> /$/; 

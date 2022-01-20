@@ -1,0 +1,6 @@
+s: 0
+(<S> <product>)*
+((<S> <value>) (((<S> ('*' whitespace)) | (<S> ('/' whitespace))) (<S> <value>))*)
+((<S> (('*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*' ':'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*' ''* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* '*'* 'K'* '*' 'K' '0' '-' '9' ']'+) whitespace)) | ((<S> ('(' whitespace)) (<S> <expression>) (<S> (')' whitespace))))
+((<S> ((start of input <#>) whitespace)) (<S> <expression>) (<S> ((((newline end of input) | (end of input <#>))* '*'* ''* '*'* '*'* '€' 'ÿ' 'ÿ' 'ÿ'* '*' '›'* '*' ''* '*'*) whitespace)))
+./math_exprs/readme.maths: error: Unable to open file!

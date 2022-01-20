@@ -1,0 +1,7 @@
+s: 0
+((<S> <product>) (((<S> ('+' whitespace)) | (<S> ('-' whitespace))) (<S> <product>))*)
+(<S> <value>)
+: /duct> *( x '-') B ) alue>)*; <va@ue>) prïduc| '/')   <value>)*;
+ value
+<?>
+./math_exprs/readme.maths: error: Unable to open file!

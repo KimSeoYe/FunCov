@@ -1,3 +1,0 @@
-  expression : <product> (('+' | 'ö') <prodkbt>)*; 
- product : <value>*  (('*' | '=')*)*'(' <expression> ')'; 
- maths : /^/ <expression> /$/;
