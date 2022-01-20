@@ -56,7 +56,7 @@ get_cmd_args (int argc, char * argv[])
             arg_cnt += 2 ;
             break ;
 
-        case 'o':   // TODO. default output dir
+        case 'o':   
             if (access(optarg, F_OK) == -1) {
                 if (mkdir(optarg, 0777) == -1) {
                     perror("get_cmd_args: mkdir: Failed to make an output directory") ;
@@ -122,6 +122,9 @@ set_output_dir ()
     }
     if (access(stderr_path, F_OK) == -1) {
         if (mkdir(stderr_path, 0777) == -1) goto mkdir_err ;
+    }
+    if (access(bitmap_path, F_OK) == -1) {
+        if (mkdir(bitmap_path, 0777) == -1) goto mkdir_err ;
     }
 
     return ;
@@ -360,7 +363,7 @@ run (int turn)
     if (pipe(stdout_pipe) != 0) goto pipe_err ;
     if (pipe(stderr_pipe) != 0) goto pipe_err ;
 
-    child_pid = fork() ; // TODO. timeout handler
+    child_pid = fork() ; 
 
     if (child_pid == 0) {
         execute_target(turn) ;
@@ -388,7 +391,7 @@ write_result_csv (char * cov_log_path, char * trace_cov_path)
 {
     FILE * fp = fopen(cov_log_path, "wb") ;
     if (fp == 0x0) {
-        perror("print_cov_results: fopen") ;
+        perror("write_result_csv: fopen") ;
         exit(1) ;
     }
     fprintf(fp, "id,fun_cov,exit_code\n") ;
@@ -399,7 +402,7 @@ write_result_csv (char * cov_log_path, char * trace_cov_path)
 
     fp = fopen(trace_cov_path, "wb") ;
     if (fp == 0x0) {
-        perror("print_cov_results: fopen") ;
+        perror("write_result_csv: fopen") ;
         exit(1) ;
     }
     fprintf(fp, "id,accumulated_cov\n") ;
@@ -407,6 +410,32 @@ write_result_csv (char * cov_log_path, char * trace_cov_path)
         fprintf(fp, "%d,%d\n", cov_stats[i].id, trace_cov[i]) ;
     }
     fclose(fp) ;
+}
+
+void
+write_result_bitmaps(char * bitmaps_dir_path) 
+{
+    for (int turn = 0; turn < conf.input_file_cnt; turn++) {
+        char input_filename[PATH_MAX] ;
+        strcpy(input_filename, conf.input_files[turn].file_path + strlen(conf.input_dir_path) + 1) ;
+        
+        char bitmap_file_path[PATH_MAX + 32] ;
+        sprintf(bitmap_file_path, "%s/%s", bitmaps_dir_path, input_filename) ;
+
+        FILE * fp = fopen(bitmap_file_path, "wb") ;
+        if (fp == 0x0) {
+            perror("write_result_bitmaps: fopen") ;
+            exit(1) ;
+        }
+
+        size_t s = fwrite(cov_stats[turn].bitmap, 1, sizeof(uint8_t) * cov_stats[turn].bitmap_size, fp) ;
+        if (s != sizeof(uint8_t) * cov_stats[turn].bitmap_size) {
+            perror("write_result_bitmaps: fwrite") ;
+            // TODO. someting..?
+        }
+
+        fclose(fp) ;
+    }
 }
 
 void
@@ -418,14 +447,19 @@ print_cov_results ()
     char trace_cov_path[PATH_MAX + 32] ;
     sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
 
+    char bitmaps_dir_path[PATH_MAX + 16] ;
+    sprintf(bitmaps_dir_path, "%s/%s", conf.output_dir_path, BITDIR) ;
+
     printf("RESULTS\n") ;
     printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
     printf("* TOTAL COVERAGE: %d\n", trace_cov[conf.input_file_cnt - 1]) ;
     printf("* LOG SAVED IN %s\n", cov_log_path) ;
     printf("* ACCUMULATED LOG SAVED IN %s\n", trace_cov_path) ;
+    printf("* FUNCTION COVERAGE BITMAPS SAVED IN %s\n", bitmaps_dir_path) ;
     printf("\n") ;
 
     write_result_csv(cov_log_path, trace_cov_path) ;
+    write_result_bitmaps(bitmaps_dir_path) ;
 }
 
 void
@@ -445,7 +479,6 @@ funcov_destroy ()
     remove_cov_log() ;
 
     if (conf.input_files != 0x0) free(conf.input_files) ;
-    // BUG: double free
     for (int i = 0; i < conf.input_file_cnt; i++) {
         free(cov_stats[i].bitmap) ;
     }
@@ -467,14 +500,12 @@ main (int argc, char * argv[])
     /**
      *  Q. log 형식이 같아야 하는데, trace-pc.c를 제공해줘야 하나...
      *  Q. instrumentation이 제대로 되어 있는지 확인할 방법이 없을지
-     * 
-     *  TODO. seed당 "어떤 function이 실행되었는지" 알아야 함.
     */
 
     printf("RUN\n") ;
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
         printf("* [%d] %s: ", turn, conf.input_files[turn].file_path) ;
-        int exit_code = run(turn) ; // TODO. save cov.logs into a directory
+        int exit_code = run(turn) ; // TODO. save cov.logs into a directory?
         
         conf.input_files[turn].fun_cov = get_cov_stat(&cov_stats[turn], &conf, turn, exit_code) ; 
         printf("cov=%d, ", conf.input_files[turn].fun_cov) ;
