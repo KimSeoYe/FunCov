@@ -19,7 +19,7 @@ typedef struct trace_bits {
     uint8_t * bitmap ;
 } trace_bits_t ;
 
-void get_cov_stat (cov_stat_t * stat, config_t * conf, int turn, int exit_code) ;
+int get_cov_stat (cov_stat_t * stat, config_t * conf, int turn, int exit_code) ;
 void trace_cov_stat (unsigned int * trace_cov, trace_bits_t * trace_bits, cov_stat_t * cur_stat) ;
 
 #endif

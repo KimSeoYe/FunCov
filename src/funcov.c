@@ -186,7 +186,7 @@ print_config ()
 void 
 funcov_init (int argc, char * argv[]) 
 {
-    get_cmd_args(argc, argv) ;  // TODO. just use exit(1) internally
+    get_cmd_args(argc, argv) ;  
     set_output_dir() ;
     read_input_dir() ;
     print_config() ;
@@ -362,6 +362,19 @@ pipe_err:
 }
 
 void
+print_cov_results ()
+{
+    // print results
+    // for (int turn = 0; turn < conf.input_file_cnt; turn++) {
+    //     printf("%d ", trace_cov[turn]) ;
+    // }
+    // printf("\n") ;
+
+    printf("RESULTS\n") ;
+
+}
+
+void
 remove_cov_log()
 {
     char cov_log_path[PATH_MAX + 8] ;
@@ -394,24 +407,18 @@ main (int argc, char * argv[])
     funcov_init(argc, argv) ;
 
     /**
-     * execute
-     * get a log... 
-     *  => log 형식이 같아야 하는데, trace-pc.c를 제공해줘야 하나...
-     *  => instrumentation이 제대로 되어 있는지 확인할 방법이 없을지
+     *  Q. log 형식이 같아야 하는데, trace-pc.c를 제공해줘야 하나...
+     *  Q. instrumentation이 제대로 되어 있는지 확인할 방법이 없을지
     */
 
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
-        int exit_code = run(turn) ;    // TODO. use this exit_code?
+        int exit_code = run(turn) ;    
         
-        get_cov_stat(&cov_stats[turn], &conf, turn, exit_code) ;
+        conf.input_files[turn].fun_cov = get_cov_stat(&cov_stats[turn], &conf, turn, exit_code) ; 
         trace_cov_stat(&trace_cov[turn], &trace_bits, &cov_stats[turn]) ;
     }
 
-    // print results
-    for (int turn = 0; turn < conf.input_file_cnt; turn++) {
-        printf("%d ", trace_cov[turn]) ;
-    }
-    printf("\n") ;
+    print_cov_results() ;  
     
     funcov_destroy() ;
 

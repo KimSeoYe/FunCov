@@ -42,16 +42,27 @@ get_bitmap (cov_stat_t * stat, config_t * conf, int turn)
     return stat->bitmap ;
 }
 
-void
+int
+get_cov_value (cov_stat_t * stat)
+{
+    int cov_val = 0 ;
+    for (int i = 0; i < stat->bitmap_size; i++) {
+        if (stat->bitmap[i] != 0) cov_val++ ;
+    }
+    return cov_val ;
+}
+
+int
 get_cov_stat (cov_stat_t * stat, config_t * conf, int turn, int exit_code)
 {
     stat->id = turn ;
     stat->exit_code = exit_code ;
 
     stat->bitmap = get_bitmap(stat, conf, turn) ;
+    
+    return get_cov_value(stat) ;
 }
 
- // trace_cov_stat(trace_cov, trace_bits, &cov_stats[turn]) ;
 void
 trace_cov_stat (unsigned int * trace_cov, trace_bits_t * trace_bits, cov_stat_t * cur_stat)
 {
