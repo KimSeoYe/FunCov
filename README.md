@@ -1,6 +1,8 @@
 # FunCov
 Function Coverage Tool using [LLVM Sanitizer Coverage](https://clang.llvm.org/docs/SanitizerCoverage.html)
 
+This is a tool to examine which function of the target program was called by the prepared input files. It has been created in the process of studying sanitizer coverage to add change-aware fuzzing components to [AFL++](https://github.com/AFLplusplus/AFLplusplus).
+
 
 ## Build This Project
 ```bash
