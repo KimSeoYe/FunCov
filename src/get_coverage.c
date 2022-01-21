@@ -21,6 +21,17 @@ reallocate_maps (trace_t * trace, cov_stat_t * stat, int guard)
     trace->bitmap_size = stat->bitmap_size ;
 }
 
+void
+update_fun_names (trace_t * trace, char * buf, int index)
+{
+    char * fun_pos = strstr(buf, ":in") ;
+    if (fun_pos == 0x0) {
+        perror("get_bitmap: strstr: LLVM symbolizer failed to find a function name") ;
+        exit(1) ;
+    }
+    strncpy(trace->fun_names[index], fun_pos + 3, strlen(fun_pos + 3) - 1) ;
+}
+
 uint8_t * 
 get_bitmap (trace_t * trace, cov_stat_t * stat, config_t * conf, int turn)
 {
@@ -48,6 +59,10 @@ get_bitmap (trace_t * trace, cov_stat_t * stat, config_t * conf, int turn)
             int index = guard - 1 ; // because guard var. starts from 1.
             if (stat->bitmap[index] == 0) stat->fun_coverage++ ;
             stat->bitmap[index] = 1 ;   // TODO. hit count?
+
+            if (trace->bitmap[index] == 0) {
+                update_fun_names(trace, buf, index) ;
+            }
         }
     }
     fclose(fp) ;

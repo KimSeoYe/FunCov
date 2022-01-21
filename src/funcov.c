@@ -217,6 +217,7 @@ funcov_init (int argc, char * argv[])
     trace.fun_names = (char **) malloc(sizeof(char *) * MAP_SIZE_UNIT) ;
     for (int i = 0; i < MAP_SIZE_UNIT; i++) {
         trace.fun_names[i] = (char *) malloc(sizeof(char) * FUN_NAME_MAX) ;
+        memset(trace.fun_names[i], 0, sizeof(char) * FUN_NAME_MAX) ;
     }
 
     trace.bitmap_size = MAP_SIZE_UNIT ; 
@@ -455,6 +456,13 @@ print_cov_results ()
 
     char bitmaps_dir_path[PATH_MAX + 16] ;
     sprintf(bitmaps_dir_path, "%s/%s", conf.output_dir_path, BITDIR) ;
+
+    printf("COVERED FUNCTIONS\n") ;
+    for (int i = 0; i < trace.bitmap_size; i++) {
+        if (trace.bitmap[i] != 0)
+            printf("* [%d] %s\n", i, trace.fun_names[i]) ;
+    }
+    printf("\n") ;
 
     printf("RESULTS\n") ;
     printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
