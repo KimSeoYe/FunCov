@@ -568,7 +568,7 @@ main (int argc, char * argv[])
     }
     printf("\n") ;
 
-    print_cov_results() ;  
+    // print_cov_results() ;  
     
     funcov_destroy() ;
 
