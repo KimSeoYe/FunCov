@@ -70,7 +70,7 @@ clang -g -fsanitize=address -fsanitize-coverage=func,trace-pc-guard -o example e
 ### 2. Execute `funcov`
 
 You need to properly set `ASAN_SYMBOLIZER_PATH` to successfully obtain the name of the function.<br>
-If the output direction does not exist, funcov will make it.
+If the output directory does not exist, funcov will make it.
 
 ```bash
 # usage: ./funcov -i [input_dir] -o [output_dir] -x [executable_binary] ... 
@@ -90,12 +90,12 @@ export ASAN_SYMBOLIZER_PATH=$(which llvm-symbolizer)
 
 ### 3. Result directory
 
-* bitmaps/
-* covered_funs/
-* err/
-* out/
-* per_cov_log.csv
-* trace_cov_log.csv
+* **bitmaps/** : It has information on covered functions for each input file as bitmaps.
+* **covered_funs/** : It has information on covered functions for each input file as .csv files.
+* **err/** : standard error results for each input file
+* **out/** : standard output results for each input file
+* **per_cov_log.csv** : The number of covered functions and exit code for each input file
+* **trace_cov_log.csv** : The log of accumulated function coverage
 
 ### 4. Result screen
 
@@ -111,7 +111,7 @@ FUNCOV ARGS
     [1] /home/git/FunCov/test/simple_example/inputs/zero_example
     [2] /home/git/FunCov/test/simple_example/inputs/positive_example
 
-# cov: # of covered functions, acc_cov: accumulated function coverage
+# cov: the number of covered functions, acc_cov: accumulated function coverage
 RUN 
 * [0] /home/git/FunCov/test/simple_example/inputs/negative_example: cov=2, acc_cov=2
 * [1] /home/git/FunCov/test/simple_example/inputs/zero_example: cov=2, acc_cov=3
@@ -133,3 +133,9 @@ RESULT SUMMARY
 
 WE ARE DONE!
 ```
+
+
+## To Do
+
+* Make a wrapper program of `clang` for preparation step
+* Make a tool which reads result bitmaps and interpretes them
