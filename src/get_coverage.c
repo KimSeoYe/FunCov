@@ -18,7 +18,7 @@ reallocate_maps (trace_t * trace, cov_stat_t * stat, int guard)
 
     trace->fun_names = realloc(trace->fun_names, sizeof(char *) * stat->bitmap_size) ;
     if (trace->fun_names == 0x0) goto alloc_fail ;
-    
+
     for (int i = trace->size; i < stat->bitmap_size; i++) {
         trace->fun_names[i] = (char *) malloc(sizeof(char) * FUN_NAME_MAX) ;
         if (trace->fun_names[i] == 0x0) goto alloc_fail ;
@@ -111,10 +111,9 @@ get_cov_stats (trace_t * trace, cov_stat_t * stat, config_t * conf, int turn, in
     stat->exit_code = exit_code ;
 
     stat->bitmap = get_bitmap(trace, stat, conf, turn) ;
-    // stat->fun_coverage = get_cov_value(stat) ;
+    stat->fun_coverage = get_cov_value(stat) ;
 
-    // int trace_cov = trace_cov_stat(trace, stat) ;
-    int trace_cov = 0 ;
+    int trace_cov = trace_cov_stat(trace, stat) ;
     
     return trace_cov ;
 }
