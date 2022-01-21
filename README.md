@@ -9,7 +9,7 @@ $ cd FunCov
 $ make
 ```
 
-## Quick Start Guide a Simple Example
+## Quick Start Guide w/ a Simple Example
 
 ### 1. Prepare your target program
 
