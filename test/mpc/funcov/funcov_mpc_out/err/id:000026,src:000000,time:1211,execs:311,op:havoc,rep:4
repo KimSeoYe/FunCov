@@ -1,0 +1,48 @@
+
+=================================================================
+==9666==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 72 byte(s) in 1 object(s) allocated from:
+    #0 0x4d9e60 in malloc (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x4d9e60)
+    #1 0x537d18 in mpc_malloc /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:241:39
+    #2 0x53d966 in mpc_err_or /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:761:7
+    #3 0x519258 in mpc_err_merge /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:876:10
+    #4 0x513ef1 in mpc_parse_input /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:1316:34
+    #5 0x531787 in mpca_lang_st /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:3735:8
+    #6 0x532120 in mpca_lang /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:3805:9
+    #7 0x5125fe in main /home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer.c:18:3
+    #8 0x7f92731b9bf6 in __libc_start_main /build/glibc-S9d2JN/glibc-2.27/csu/../csu/libc-start.c:310
+
+Indirect leak of 512 byte(s) in 8 object(s) allocated from:
+    #0 0x4d9e60 in malloc (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x4d9e60)
+    #1 0x518d0f in mpc_export /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:289:7
+    #2 0x518e6e in mpc_err_export /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:724:22
+    #3 0x513efd in mpc_parse_input /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:1316:16
+    #4 0x531787 in mpca_lang_st /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:3735:8
+    #5 0x532120 in mpca_lang /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:3805:9
+    #6 0x5125fe in main /home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer.c:18:3
+    #7 0x7f92731b9bf6 in __libc_start_main /build/glibc-S9d2JN/glibc-2.27/csu/../csu/libc-start.c:310
+
+Indirect leak of 64 byte(s) in 1 object(s) allocated from:
+    #0 0x4d9e60 in malloc (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x4d9e60)
+    #1 0x518d0f in mpc_export /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:289:7
+    #2 0x518fc2 in mpc_err_export /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:727:17
+    #3 0x513efd in mpc_parse_input /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:1316:16
+    #4 0x531787 in mpca_lang_st /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:3735:8
+    #5 0x532120 in mpca_lang /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:3805:9
+    #6 0x5125fe in main /home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer.c:18:3
+    #7 0x7f92731b9bf6 in __libc_start_main /build/glibc-S9d2JN/glibc-2.27/csu/../csu/libc-start.c:310
+
+Indirect leak of 64 byte(s) in 1 object(s) allocated from:
+    #0 0x4da2e0 in realloc (/home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer+0x4da2e0)
+    #1 0x53a728 in mpc_realloc /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:274:36
+    #2 0x53e906 in mpc_err_add_expected /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:744:17
+    #3 0x53e4e7 in mpc_err_or /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:788:9
+    #4 0x519258 in mpc_err_merge /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:876:10
+    #5 0x513ef1 in mpc_parse_input /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:1316:34
+    #6 0x531787 in mpca_lang_st /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:3735:8
+    #7 0x532120 in mpca_lang /home/kimseoye/git/FunCov/test/mpc/funcov/../mpc.c:3805:9
+    #8 0x5125fe in main /home/kimseoye/git/FunCov/test/mpc/funcov/math_fuzzer.c:18:3
+    #9 0x7f92731b9bf6 in __libc_start_main /build/glibc-S9d2JN/glibc-2.27/csu/../csu/libc-start.c:310
+
+SUMMARY: AddressSanitizer: 712 byte(s) leaked in 11 allocation(s).
