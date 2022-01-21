@@ -498,7 +498,7 @@ print_cov_results ()
     }
     printf("\n") ;
 
-    printf("RESULTS\n") ;
+    printf("RESULT SUMMARY\n") ;
     printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
     printf("* TOTAL COVERAGE: %d\n", trace_cov[conf.input_file_cnt - 1]) ;
     printf("* LOG SAVED IN %s\n", cov_log_path) ;
