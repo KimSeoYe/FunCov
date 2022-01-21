@@ -95,7 +95,9 @@ export ASAN_SYMBOLIZER_PATH=$(which llvm-symbolizer)
 * **err/** : standard error results for each input file
 * **out/** : standard output results for each input file
 * **per_cov_log.csv** : The number of covered functions and exit code for each input file
-* **trace_cov_log.csv** : The log of accumulated function coverage
+* **trace_cov_log.csv** : The log of accumulated function coverage. You can use this file to draw the following coverage graph.
+<img width="498" alt="image" src="https://user-images.githubusercontent.com/47961698/150488384-3e753db3-8684-454d-b7c8-6b750b3cb4e2.png">
+
 
 ### 4. Result screen
 
