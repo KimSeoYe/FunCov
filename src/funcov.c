@@ -20,6 +20,7 @@
 #define OUTDIR "out"
 #define ERRDIR "err"
 #define BITDIR "bitmaps"
+#define FUNDIR "covered_funs"
 
 static config_t conf ;
 static cov_stat_t * cov_stats ;
@@ -111,11 +112,13 @@ set_output_dir ()
 {
     char stdout_path[PATH_MAX + 4] ;
     char stderr_path[PATH_MAX + 4] ;
-    char bitmap_path[PATH_MAX + 16] ;
+    char bitmap_path[PATH_MAX + 32] ;
+    char fundir_path[PATH_MAX + 32] ;
 
     sprintf(stdout_path, "%s/%s", conf.output_dir_path, OUTDIR) ;
     sprintf(stderr_path, "%s/%s", conf.output_dir_path, ERRDIR) ;
     sprintf(bitmap_path, "%s/%s", conf.output_dir_path, BITDIR) ;
+    sprintf(fundir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;
     
     if (access(stdout_path, F_OK) == -1) {
         if (mkdir(stdout_path, 0777) == -1) goto mkdir_err ;
@@ -125,6 +128,9 @@ set_output_dir ()
     }
     if (access(bitmap_path, F_OK) == -1) {
         if (mkdir(bitmap_path, 0777) == -1) goto mkdir_err ;
+    }
+    if (access(fundir_path, F_OK) == -1) {
+        if (mkdir(fundir_path, 0777) == -1) goto mkdir_err ;
     }
 
     return ;
@@ -220,7 +226,7 @@ funcov_init (int argc, char * argv[])
         memset(trace.fun_names[i], 0, sizeof(char) * FUN_NAME_MAX) ;
     }
 
-    trace.bitmap_size = MAP_SIZE_UNIT ; 
+    trace.size = MAP_SIZE_UNIT ; 
 }
 
 
@@ -394,11 +400,11 @@ pipe_err:
 }
 
 void
-write_result_csv (char * cov_log_path, char * trace_cov_path)
+write_log_csv (char * cov_log_path, char * trace_cov_path)
 {
     FILE * fp = fopen(cov_log_path, "wb") ;
     if (fp == 0x0) {
-        perror("write_result_csv: fopen") ;
+        perror("write_log_csv: fopen") ;
         exit(1) ;
     }
     fprintf(fp, "id,fun_cov,exit_code\n") ;
@@ -409,7 +415,7 @@ write_result_csv (char * cov_log_path, char * trace_cov_path)
 
     fp = fopen(trace_cov_path, "wb") ;
     if (fp == 0x0) {
-        perror("write_result_csv: fopen") ;
+        perror("write_log_csv: fopen") ;
         exit(1) ;
     }
     fprintf(fp, "id,accumulated_cov\n") ;
@@ -446,6 +452,31 @@ write_result_bitmaps(char * bitmaps_dir_path)
 }
 
 void
+write_result_funcovs(char * funcov_dir_path) 
+{
+    for (int turn = 0; turn < conf.input_file_cnt; turn++) {
+        char input_filename[PATH_MAX] ;
+        strcpy(input_filename, conf.input_files[turn].file_path + strlen(conf.input_dir_path) + 1) ;
+        
+        char funcov_file_path[PATH_MAX + 32] ;
+        sprintf(funcov_file_path, "%s/%s.csv", funcov_dir_path, input_filename) ;
+
+        FILE * fp = fopen(funcov_file_path, "wb") ;
+        if (fp == 0x0) {
+            perror("write_result_funcovs: fopen") ;
+            exit(1) ;
+        }
+
+        fprintf(fp, "id,covered_function\n") ;
+        for (int i = 0; i < trace.size; i++) {
+            if (trace.bitmap[i] != 0) fprintf(fp, "%d,%s\n", i, trace.fun_names[i]) ;
+        }
+
+        fclose(fp) ;
+    }
+}
+
+void
 print_cov_results ()
 {
     char cov_log_path[PATH_MAX + 32] ;
@@ -454,11 +485,14 @@ print_cov_results ()
     char trace_cov_path[PATH_MAX + 32] ;
     sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
 
-    char bitmaps_dir_path[PATH_MAX + 16] ;
+    char bitmaps_dir_path[PATH_MAX + 32] ;
     sprintf(bitmaps_dir_path, "%s/%s", conf.output_dir_path, BITDIR) ;
 
+    char funcov_dir_path[PATH_MAX + 32] ;
+    sprintf(funcov_dir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;
+
     printf("COVERED FUNCTIONS\n") ;
-    for (int i = 0; i < trace.bitmap_size; i++) {
+    for (int i = 0; i < trace.size; i++) {
         if (trace.bitmap[i] != 0)
             printf("* [%d] %s\n", i, trace.fun_names[i]) ;
     }
@@ -470,10 +504,12 @@ print_cov_results ()
     printf("* LOG SAVED IN %s\n", cov_log_path) ;
     printf("* ACCUMULATED LOG SAVED IN %s\n", trace_cov_path) ;
     printf("* FUNCTION COVERAGE BITMAPS SAVED IN %s\n", bitmaps_dir_path) ;
+    printf("* COVERED FUNTIONS PER INPUT SAVED IN %s\n", funcov_dir_path) ;
     printf("\n") ;
 
-    write_result_csv(cov_log_path, trace_cov_path) ;
+    write_log_csv(cov_log_path, trace_cov_path) ;
     write_result_bitmaps(bitmaps_dir_path) ;
+    write_result_funcovs(funcov_dir_path) ;
 }
 
 void
@@ -499,7 +535,7 @@ funcov_destroy ()
     free(cov_stats) ;
 
     
-    for (int i = 0; i < trace.bitmap_size; i++) {
+    for (int i = 0; i < trace.size; i++) {
         free(trace.fun_names[i]) ;
     }
     free(trace.fun_names) ;

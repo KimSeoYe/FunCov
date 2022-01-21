@@ -14,11 +14,11 @@ reallocate_maps (trace_t * trace, cov_stat_t * stat, int guard)
 
     trace->bitmap = realloc(trace->bitmap, sizeof(uint8_t) * stat->bitmap_size) ;
     trace->fun_names = realloc(trace->fun_names, sizeof(char *) * stat->bitmap_size) ;
-    for (int i = trace->bitmap_size; i < stat->bitmap_size; i++) {
+    for (int i = trace->size; i < stat->bitmap_size; i++) {
         trace->fun_names[i] = (char *) malloc(sizeof(char) * FUN_NAME_MAX) ;
     }
 
-    trace->bitmap_size = stat->bitmap_size ;
+    trace->size = stat->bitmap_size ;
 }
 
 void
@@ -84,7 +84,7 @@ int
 trace_cov_stat (trace_t * trace, cov_stat_t * cur_stat)
 {
     int trace_cov = 0 ;
-    for (int i = 0; i < trace->bitmap_size; i++) {
+    for (int i = 0; i < trace->size; i++) {
         if (trace->bitmap[i] == 0 && cur_stat->bitmap[i] != 0) {
             trace->bitmap[i] = cur_stat->bitmap[i] ;
         }

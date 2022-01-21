@@ -15,7 +15,7 @@ typedef struct cov_stat {
 } cov_stat_t ;
 
 typedef struct trace {
-    unsigned int bitmap_size ;
+    unsigned int size ;
     uint8_t * bitmap ;
     char ** fun_names ;
 } trace_t ;
