@@ -52,31 +52,35 @@ get_cov_value (cov_stat_t * stat)
     return cov_val ; 
 }
 
-int
-get_cov_stat (cov_stat_t * stat, config_t * conf, int turn, int exit_code)
-{
-    stat->id = turn ;
-    stat->exit_code = exit_code ;
-
-    stat->bitmap = get_bitmap(stat, conf, turn) ;
-    stat->fun_coverage = get_cov_value(stat) ;
-    
-    return stat->fun_coverage ;
-}
-
-void
-trace_cov_stat (unsigned int * trace_cov, trace_bits_t * trace_bits, cov_stat_t * cur_stat)
+int 
+trace_cov_stat (trace_bits_t * trace_bits, cov_stat_t * cur_stat)
 {
     if (cur_stat->bitmap_size > trace_bits->bitmap_size) {
         trace_bits->bitmap = realloc(trace_bits->bitmap, sizeof(uint8_t) * cur_stat->bitmap_size) ;
         trace_bits->bitmap_size = cur_stat->bitmap_size ;
     }
 
-    *trace_cov = 0 ;
+    int trace_cov = 0 ;
     for (int i = 0; i < trace_bits->bitmap_size; i++) {
         if (trace_bits->bitmap[i] == 0 && cur_stat->bitmap[i] != 0) {
             trace_bits->bitmap[i] = cur_stat->bitmap[i] ;
         }
-        if (trace_bits->bitmap[i] != 0) (*trace_cov)++ ;
+        if (trace_bits->bitmap[i] != 0) trace_cov++ ;
     }
+
+    return trace_cov ;
+}
+
+int
+get_cov_stats (trace_bits_t * trace_bits, char ** fun_names, cov_stat_t * stat, config_t * conf, int turn, int exit_code)
+{
+    stat->id = turn ;
+    stat->exit_code = exit_code ;
+
+    stat->bitmap = get_bitmap(stat, conf, turn) ;
+    stat->fun_coverage = get_cov_value(stat) ;
+
+    int trace_cov = trace_cov_stat(trace_bits, stat) ;
+    
+    return trace_cov ;
 }
