@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "funcov.h"
 
-#define MAP_SIZE_UNIT 1 // Q.
+#define MAP_SIZE_UNIT 4096 // Q.
 
 typedef struct cov_stat {
     int id ;
