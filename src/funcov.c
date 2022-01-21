@@ -36,7 +36,7 @@ static trace_t trace ;
  * -x : executable binary path
  * 
  * optional
- * @@ : input type - file as an argument
+ * @@ : input type - file as an argument (default: stdin)
 */
 
 void
@@ -103,7 +103,7 @@ get_cmd_args (int argc, char * argv[])
     return ;
 
 print_usage:
-    perror("\nusage: ./funcov -i [input_dir] -x [executable_binary] ...\n\nrequired\n-i : input directory path\n-o : output directory path\n-x : executable binary path\n\noptional\n@@ : input type - file as an argument\n\n") ;
+    perror("\nusage: ./funcov -i [input_dir] -x [executable_binary] ...\n\nrequired\n-i : input directory path\n-o : output directory path\n-x : executable binary path\n\noptional\n@@ : input type - file path as an argument (default: stdin)\n\n") ;
     exit(1) ;
 }
 

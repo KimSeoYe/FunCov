@@ -1,5 +1,5 @@
 # FunCov
-Function Coverage Tool using Sanitizer Coverage
+Function Coverage Tool using [LLVM Sanitizer Coverage](https://clang.llvm.org/docs/SanitizerCoverage.html)
 
 
 ## Build This Project
@@ -69,6 +69,9 @@ clang -g -fsanitize=address -fsanitize-coverage=func,trace-pc-guard -o example e
 
 ### 2. Execute `funcov`
 
+You need to properly set `ASAN_SYMBOLIZER_PATH` to successfully obtain the name of the function.<br>
+If the output direction does not exist, funcov will make it.
+
 ```bash
 # usage: ./funcov -i [input_dir] -o [output_dir] -x [executable_binary] ... 
 
@@ -78,15 +81,12 @@ clang -g -fsanitize=address -fsanitize-coverage=func,trace-pc-guard -o example e
 # -x : executable binary path
     
 # optional
-# @@ : input type - file as an argument
+# @@ : input type - file path as an argument (default: stdin)
 
 export ASAN_SYMBOLIZER_PATH=$(which llvm-symbolizer)
 ../../funcov -i inputs/ -o out/ -x example
 
 ```
-You need to properly set `ASAN_SYMBOLIZER_PATH` to successfully obtain the name of the function.
-
-If the output direction does not exist, funcov will make it.
 
 ### 3. Result directory
 
