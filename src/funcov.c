@@ -13,7 +13,6 @@
 #include "../include/get_coverage.h"
 
 #define INPUT_CNT_UNIT 512
-#define FUN_NAME_MAX 512 
 
 #define STDOUT_FD 1
 #define STDERR_FD 2
@@ -24,9 +23,8 @@
 
 static config_t conf ;
 static cov_stat_t * cov_stats ;
-static unsigned int * trace_cov ;
-static trace_bits_t trace_bits ;
-static char ** fun_names ;
+static unsigned int * trace_cov ; // TODO. into trace
+static trace_t trace ;
 
 /**
  * usage: ./funcov -i [input_dir] -o [output_dir] -x [executable_binary] ...
@@ -210,17 +208,18 @@ funcov_init (int argc, char * argv[])
         memset(cov_stats[i].bitmap, 0, MAP_SIZE_UNIT) ;
     }
 
-    fun_names = (char **) malloc(sizeof(char *) * MAP_SIZE_UNIT) ;
-    for (int i = 0; i < MAP_SIZE_UNIT; i++) {
-        fun_names[i] = (char *) malloc(sizeof(char) * FUN_NAME_MAX) ;
-    }
-
     trace_cov = (unsigned int *) malloc(sizeof(unsigned int) * MAP_SIZE_UNIT) ;
     memset(trace_cov, 0, MAP_SIZE_UNIT) ;
 
-    trace_bits.bitmap = (uint8_t *) malloc(sizeof(uint8_t) * MAP_SIZE_UNIT) ;
-    memset(trace_bits.bitmap, 0, MAP_SIZE_UNIT) ;
-    trace_bits.bitmap_size = MAP_SIZE_UNIT ; 
+    trace.bitmap = (uint8_t *) malloc(sizeof(uint8_t) * MAP_SIZE_UNIT) ;
+    memset(trace.bitmap, 0, MAP_SIZE_UNIT) ;
+
+    trace.fun_names = (char **) malloc(sizeof(char *) * MAP_SIZE_UNIT) ;
+    for (int i = 0; i < MAP_SIZE_UNIT; i++) {
+        trace.fun_names[i] = (char *) malloc(sizeof(char) * FUN_NAME_MAX) ;
+    }
+
+    trace.bitmap_size = MAP_SIZE_UNIT ; 
 }
 
 
@@ -491,13 +490,14 @@ funcov_destroy ()
     }
     free(cov_stats) ;
 
-    for (int i = 0; i < MAP_SIZE_UNIT; i++) {
-        free(fun_names[i]) ;
+    
+    for (int i = 0; i < trace.bitmap_size; i++) {
+        free(trace.fun_names[i]) ;
     }
-    free(fun_names) ;
+    free(trace.fun_names) ;
 
     free(trace_cov) ;
-    free(trace_bits.bitmap) ;
+    free(trace.bitmap) ;
 
     printf("WE ARE DONE!\n\n") ;
 }
@@ -519,7 +519,7 @@ main (int argc, char * argv[])
         printf("* [%d] %s: ", turn, conf.input_files[turn].file_path) ;
         int exit_code = run(turn) ; // TODO. save cov.logs into a directory?
         
-        trace_cov[turn] = get_cov_stats(&trace_bits, fun_names, &cov_stats[turn], &conf, turn, exit_code) ; 
+        trace_cov[turn] = get_cov_stats(&trace, &cov_stats[turn], &conf, turn, exit_code) ; 
         printf("cov=%d, acc_cov=%d\n", cov_stats[turn].fun_coverage, trace_cov[turn]) ;
     }
     printf("\n") ;

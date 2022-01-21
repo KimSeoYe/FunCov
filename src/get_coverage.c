@@ -6,8 +6,23 @@
 
 #include "../include/get_coverage.h"
 
+void
+reallocate_maps (trace_t * trace, cov_stat_t * stat, int guard)
+{
+    stat->bitmap_size = (guard / MAP_SIZE_UNIT) * MAP_SIZE_UNIT ;
+    stat->bitmap = realloc(stat->bitmap, sizeof(uint8_t) * stat->bitmap_size) ;
+
+    trace->bitmap = realloc(trace->bitmap, sizeof(uint8_t) * stat->bitmap_size) ;
+    trace->fun_names = realloc(trace->fun_names, sizeof(char *) * stat->bitmap_size) ;
+    for (int i = trace->bitmap_size; i < stat->bitmap_size; i++) {
+        trace->fun_names[i] = (char *) malloc(sizeof(char) * FUN_NAME_MAX) ;
+    }
+
+    trace->bitmap_size = stat->bitmap_size ;
+}
+
 uint8_t * 
-get_bitmap (cov_stat_t * stat, config_t * conf, int turn)
+get_bitmap (trace_t * trace, cov_stat_t * stat, config_t * conf, int turn)
 {
     char log_path[PATH_MAX + 8] ;
     sprintf(log_path, "%s/%s", conf->output_dir_path, LOGNAME) ;
@@ -27,9 +42,7 @@ get_bitmap (cov_stat_t * stat, config_t * conf, int turn)
         if (line != 0) {
             int guard = atoi(buf) ; 
             if (guard > stat->bitmap_size) {
-                stat->bitmap_size = (guard / MAP_SIZE_UNIT) * MAP_SIZE_UNIT ;
-                stat->bitmap = realloc(stat->bitmap, sizeof(uint8_t) * stat->bitmap_size) ;
-                printf("realloc: %d\n", stat->bitmap_size) ;
+                reallocate_maps(trace, stat, guard) ;
             }
 
             int index = guard - 1 ; // because guard var. starts from 1.
@@ -53,34 +66,29 @@ get_cov_value (cov_stat_t * stat)
 }
 
 int 
-trace_cov_stat (trace_bits_t * trace_bits, cov_stat_t * cur_stat)
+trace_cov_stat (trace_t * trace, cov_stat_t * cur_stat)
 {
-    if (cur_stat->bitmap_size > trace_bits->bitmap_size) {
-        trace_bits->bitmap = realloc(trace_bits->bitmap, sizeof(uint8_t) * cur_stat->bitmap_size) ;
-        trace_bits->bitmap_size = cur_stat->bitmap_size ;
-    }
-
     int trace_cov = 0 ;
-    for (int i = 0; i < trace_bits->bitmap_size; i++) {
-        if (trace_bits->bitmap[i] == 0 && cur_stat->bitmap[i] != 0) {
-            trace_bits->bitmap[i] = cur_stat->bitmap[i] ;
+    for (int i = 0; i < trace->bitmap_size; i++) {
+        if (trace->bitmap[i] == 0 && cur_stat->bitmap[i] != 0) {
+            trace->bitmap[i] = cur_stat->bitmap[i] ;
         }
-        if (trace_bits->bitmap[i] != 0) trace_cov++ ;
+        if (trace->bitmap[i] != 0) trace_cov++ ;
     }
 
     return trace_cov ;
 }
 
 int
-get_cov_stats (trace_bits_t * trace_bits, char ** fun_names, cov_stat_t * stat, config_t * conf, int turn, int exit_code)
+get_cov_stats (trace_t * trace, cov_stat_t * stat, config_t * conf, int turn, int exit_code)
 {
     stat->id = turn ;
     stat->exit_code = exit_code ;
 
-    stat->bitmap = get_bitmap(stat, conf, turn) ;
+    stat->bitmap = get_bitmap(trace, stat, conf, turn) ;
     stat->fun_coverage = get_cov_value(stat) ;
 
-    int trace_cov = trace_cov_stat(trace_bits, stat) ;
+    int trace_cov = trace_cov_stat(trace, stat) ;
     
     return trace_cov ;
 }
