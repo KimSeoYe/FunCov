@@ -511,8 +511,8 @@ write_result_funcovs(char * funcov_dir_path)
         }
 
         fprintf(fp, "id,covered_function\n") ;
-        for (int i = 0; i < trace.size; i++) {
-            if (trace.bitmap[i] != 0) fprintf(fp, "%d,%s\n", i, trace.fun_names[i]) ;
+        for (int i = 0; i < cov_stats[turn].bitmap_size; i++) {
+            if (cov_stats[turn].bitmap[i] != 0) fprintf(fp, "%d,%s\n", i, trace.fun_names[i]) ;
         }
 
         fclose(fp) ;
