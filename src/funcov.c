@@ -16,11 +16,13 @@
 
 #define STDOUT_FD 1
 #define STDERR_FD 2
+#define LOG_FD 3
 
 #define OUTDIR "out"
 #define ERRDIR "err"
 #define BITDIR "bitmaps"
 #define FUNDIR "covered_funs"
+#define LOGDIR "logs"
 
 static config_t conf ;
 static cov_stat_t * cov_stats ;
@@ -114,11 +116,13 @@ set_output_dir ()
     char stderr_path[PATH_MAX + 4] ;
     char bitmap_path[PATH_MAX + 32] ;
     char fundir_path[PATH_MAX + 32] ;
+    char logdir_path[PATH_MAX + 32] ;
 
     sprintf(stdout_path, "%s/%s", conf.output_dir_path, OUTDIR) ;
     sprintf(stderr_path, "%s/%s", conf.output_dir_path, ERRDIR) ;
     sprintf(bitmap_path, "%s/%s", conf.output_dir_path, BITDIR) ;
     sprintf(fundir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;
+    sprintf(logdir_path, "%s/%s", conf.output_dir_path, LOGDIR) ;
     
     if (access(stdout_path, F_OK) == -1) {
         if (mkdir(stdout_path, 0777) == -1) goto mkdir_err ;
@@ -131,6 +135,9 @@ set_output_dir ()
     }
     if (access(fundir_path, F_OK) == -1) {
         if (mkdir(fundir_path, 0777) == -1) goto mkdir_err ;
+    }
+    if (access(logdir_path, F_OK) == -1) {
+        if (mkdir(logdir_path, 0777) == -1) goto mkdir_err ;
     }
 
     return ;
@@ -319,7 +326,44 @@ get_result_file_path (char * path, int turn, int fd)
     case STDERR_FD:
         sprintf(path, "%s/%s/%s", conf.output_dir_path, ERRDIR, input_filename) ;
         break;
+    
+    case LOG_FD:
+        sprintf(path, "%s/%s/%s", conf.output_dir_path, LOGDIR, input_filename) ;
+        break;
     }
+}
+
+void
+write_log_file (int turn)
+{
+    char in_log_path[PATH_MAX + 8] ;
+    sprintf(in_log_path, "%s/cov.log", conf.output_dir_path) ;
+
+    char out_log_path[PATH_MAX] ;
+    get_result_file_path(out_log_path, turn, LOG_FD) ;
+
+    FILE * r_fp = fopen(in_log_path, "rb") ;
+    if (r_fp == 0x0) goto fopen_err ;
+
+    FILE * w_fp = fopen(out_log_path, "wb") ;
+    if (w_fp == 0x0) goto fopen_err ; 
+
+    char buf[BUF_SIZE] ;
+    int s ;
+
+    while ((s = fread(buf, 1, BUF_SIZE, r_fp)) > 0) {
+        if (fwrite(buf, 1, s, w_fp) != s) {
+            perror("write_log_file: fwrite") ;
+        }
+    }
+
+    fclose(r_fp) ;
+
+    return ;
+
+fopen_err:
+    perror("write_log_file: fopen") ;
+    exit(1) ;
 }
 
 void
@@ -353,8 +397,6 @@ write_out_file (int turn, int fd)
         }
         close(stderr_pipe[0]) ;
     }
-
-    fclose(fp) ;
 }
 
 void
@@ -367,6 +409,7 @@ save_results (int turn)
 
     write_out_file(turn, STDOUT_FD) ; // Q. need?
     write_out_file(turn, STDERR_FD) ;
+    write_log_file(turn) ;
 }
 
 int
@@ -407,9 +450,9 @@ write_log_csv (char * cov_log_path, char * trace_cov_path)
         perror("write_log_csv: fopen") ;
         exit(1) ;
     }
-    fprintf(fp, "id,fun_cov,exit_code\n") ;
+    fprintf(fp, "id,fun_cov,exit_code,filename\n") ;
     for (int i = 0; i < conf.input_file_cnt; i++) {
-        fprintf(fp, "%d,%d,%d\n", cov_stats[i].id, cov_stats[i].fun_coverage, cov_stats[i].exit_code) ;
+        fprintf(fp, "%d,%d,%d,\"%s\"\n", cov_stats[i].id, cov_stats[i].fun_coverage, cov_stats[i].exit_code, conf.input_files[i].file_path) ;
     }
     fclose(fp) ;
 
@@ -485,6 +528,9 @@ print_cov_results ()
     char trace_cov_path[PATH_MAX + 32] ;
     sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
 
+    char logs_dir_path[PATH_MAX + 32] ;
+    sprintf(logs_dir_path, "%s/%s", conf.output_dir_path, LOGDIR) ;
+
     char bitmaps_dir_path[PATH_MAX + 32] ;
     sprintf(bitmaps_dir_path, "%s/%s", conf.output_dir_path, BITDIR) ;
 
@@ -502,6 +548,7 @@ print_cov_results ()
     printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
     printf("* TOTAL COVERAGE: %d\n", trace_cov[conf.input_file_cnt - 1]) ;
     printf("* LOG SAVED IN %s\n", cov_log_path) ;
+    printf("* LOGS PER INPUT SAVED IN %s\n", logs_dir_path) ;
     printf("* ACCUMULATED LOG SAVED IN %s\n", trace_cov_path) ;
     printf("* FUNCTION COVERAGE BITMAPS SAVED IN %s\n", bitmaps_dir_path) ;
     printf("* COVERED FUNTIONS PER INPUT SAVED IN %s\n", funcov_dir_path) ;
