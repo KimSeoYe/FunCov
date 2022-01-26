@@ -12,6 +12,8 @@
 #include "../include/funcov.h"
 #include "../include/get_coverage.h"
 
+#define DEBUG_COV
+
 #define INPUT_CNT_UNIT 512
 
 #define STDOUT_FD 1
@@ -113,32 +115,36 @@ void
 set_output_dir ()
 {
     char stdout_path[PATH_MAX + 4] ;
-    char stderr_path[PATH_MAX + 4] ;
-    char bitmap_path[PATH_MAX + 32] ;
-    char fundir_path[PATH_MAX + 32] ;
-    char logdir_path[PATH_MAX + 32] ;
-
     sprintf(stdout_path, "%s/%s", conf.output_dir_path, OUTDIR) ;
-    sprintf(stderr_path, "%s/%s", conf.output_dir_path, ERRDIR) ;
-    sprintf(bitmap_path, "%s/%s", conf.output_dir_path, BITDIR) ;
-    sprintf(fundir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;
-    sprintf(logdir_path, "%s/%s", conf.output_dir_path, LOGDIR) ;
-    
     if (access(stdout_path, F_OK) == -1) {
         if (mkdir(stdout_path, 0777) == -1) goto mkdir_err ;
     }
+
+    char stderr_path[PATH_MAX + 4] ;
+    sprintf(stderr_path, "%s/%s", conf.output_dir_path, ERRDIR) ;
     if (access(stderr_path, F_OK) == -1) {
         if (mkdir(stderr_path, 0777) == -1) goto mkdir_err ;
     }
+
+    char bitmap_path[PATH_MAX + 32] ;
+    sprintf(bitmap_path, "%s/%s", conf.output_dir_path, BITDIR) ;
     if (access(bitmap_path, F_OK) == -1) {
         if (mkdir(bitmap_path, 0777) == -1) goto mkdir_err ;
     }
+
+    char fundir_path[PATH_MAX + 32] ;
+    sprintf(fundir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;
     if (access(fundir_path, F_OK) == -1) {
         if (mkdir(fundir_path, 0777) == -1) goto mkdir_err ;
     }
+
+#ifdef DEBUG_COV
+    char logdir_path[PATH_MAX + 32] ;
+    sprintf(logdir_path, "%s/%s", conf.output_dir_path, LOGDIR) ;
     if (access(logdir_path, F_OK) == -1) {
         if (mkdir(logdir_path, 0777) == -1) goto mkdir_err ;
     }
+#endif
 
     return ;
 
@@ -265,7 +271,7 @@ execute_target (int turn)
         perror("execute_target: fopen") ;
         exit(1) ;
     }
-    
+
     if (conf.input_type == STDIN) {
         while (!feof(fp)) {
             char buf[BUF_SIZE] ;
@@ -326,13 +332,16 @@ get_result_file_path (char * path, int turn, int fd)
     case STDERR_FD:
         sprintf(path, "%s/%s/%s", conf.output_dir_path, ERRDIR, input_filename) ;
         break;
-    
+
+#ifdef DEBUG_COV    
     case LOG_FD:
         sprintf(path, "%s/%s/%s", conf.output_dir_path, LOGDIR, input_filename) ;
         break;
+#endif
     }
 }
 
+#ifdef DEBUG_COV  
 void
 write_log_file (int turn)
 {
@@ -365,6 +374,7 @@ fopen_err:
     perror("write_log_file: fopen") ;
     exit(1) ;
 }
+#endif
 
 void
 write_out_file (int turn, int fd)
@@ -409,7 +419,9 @@ save_results (int turn)
 
     write_out_file(turn, STDOUT_FD) ; // Q. need?
     write_out_file(turn, STDERR_FD) ;
+#ifdef DEBUG_COV  
     write_log_file(turn) ;
+#endif
 }
 
 int
@@ -528,8 +540,10 @@ print_cov_results ()
     char trace_cov_path[PATH_MAX + 32] ;
     sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
 
+#ifdef DEBUG_COV  
     char logs_dir_path[PATH_MAX + 32] ;
     sprintf(logs_dir_path, "%s/%s", conf.output_dir_path, LOGDIR) ;
+#endif
 
     char bitmaps_dir_path[PATH_MAX + 32] ;
     sprintf(bitmaps_dir_path, "%s/%s", conf.output_dir_path, BITDIR) ;
@@ -548,7 +562,9 @@ print_cov_results ()
     printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
     printf("* TOTAL COVERAGE: %d\n", trace_cov[conf.input_file_cnt - 1]) ;
     printf("* LOG SAVED IN %s\n", cov_log_path) ;
+#ifdef DEBUG_COV  
     printf("* LOGS PER INPUT SAVED IN %s\n", logs_dir_path) ;
+#endif
     printf("* ACCUMULATED LOG SAVED IN %s\n", trace_cov_path) ;
     printf("* FUNCTION COVERAGE BITMAPS SAVED IN %s\n", bitmaps_dir_path) ;
     printf("* COVERED FUNTIONS PER INPUT SAVED IN %s\n", funcov_dir_path) ;
@@ -600,15 +616,10 @@ main (int argc, char * argv[])
 
     funcov_init(argc, argv) ;
 
-    /**
-     *  Q. log 형식이 같아야 하는데, trace-pc.c를 제공해줘야 하나...
-     *  Q. instrumentation이 제대로 되어 있는지 확인할 방법이 없을지
-    */
-
     printf("RUN\n") ;
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
         printf("* [%d] %s: ", turn, conf.input_files[turn].file_path) ;
-        int exit_code = run(turn) ; // TODO. save cov.logs into a directory?
+        int exit_code = run(turn) ;
         
         trace_cov[turn] = get_cov_stats(&trace, &cov_stats[turn], &conf, turn, exit_code) ; 
         printf("cov=%d, acc_cov=%d\n", cov_stats[turn].fun_coverage, trace_cov[turn]) ;
