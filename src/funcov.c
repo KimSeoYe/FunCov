@@ -28,7 +28,7 @@
 
 static config_t conf ;
 static cov_stat_t * cov_stats ;
-static unsigned int * trace_cov ; // TODO. into trace
+static unsigned int * trace_cov ; 
 static trace_t trace ;
 
 /**
@@ -499,7 +499,6 @@ write_result_bitmaps(char * bitmaps_dir_path)
         size_t s = fwrite(cov_stats[turn].bitmap, 1, sizeof(uint8_t) * cov_stats[turn].bitmap_size, fp) ;
         if (s != sizeof(uint8_t) * cov_stats[turn].bitmap_size) {
             perror("write_result_bitmaps: fwrite") ;
-            // TODO. someting..?
         }
 
         fclose(fp) ;

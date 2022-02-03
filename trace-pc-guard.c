@@ -22,7 +22,7 @@ extern void __sanitizer_cov_trace_pc_guard_init(uint32_t *start,
   
   FILE * fp = fopen("cov.log", "wb") ;
   char buf[1024] ;
-  sprintf(buf, "INIT: %p %p\n", start, stop);
+  sprintf(buf, "guard#:callee::caller:caller_line#\n");
   fwrite(buf, strlen(buf), 1, fp) ;
   fclose(fp) ;
   
@@ -45,15 +45,19 @@ extern void __sanitizer_cov_trace_pc_guard(uint32_t *guard) {
   // The values of `*guard` are as you set them in
   // __sanitizer_cov_trace_pc_guard_init and so you can make them consecutive
   // and use them to dereference an array or a bit vector.
-  void *PC = __builtin_return_address(0);
+  void * PC = __builtin_return_address(0);
   char PcDescr[1024];
   // This function is a part of the sanitizer run-time.
   // To use it, link with AddressSanitizer or other sanitizer.
-  __sanitizer_symbolize_pc(PC, "%F:%L", PcDescr, sizeof(PcDescr));
+  __sanitizer_symbolize_pc(PC, "%f", PcDescr, sizeof(PcDescr));
+
+  void * caller_pc = __builtin_return_address(1) ;
+  char caller_descr[1024] ;
+  __sanitizer_symbolize_pc(caller_pc, "%f:%l", caller_descr, sizeof(caller_descr));
 
   FILE * fp = fopen("cov.log", "ab") ;
   char log[2048] ;
-  sprintf(log, "%d[%p]:%s\n", *guard, guard, PcDescr) ;
+  sprintf(log, "%d:%s::%s\n", *guard, PcDescr, caller_descr) ;
   fwrite(log, strlen(log), 1, fp) ;
   fclose(fp) ;
 }

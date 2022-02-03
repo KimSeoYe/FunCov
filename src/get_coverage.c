@@ -34,12 +34,12 @@ alloc_fail:
 void
 update_fun_names (trace_t * trace, char * buf, int index)
 {
-    char * fun_pos = strstr(buf, ":in") ;
-    if (fun_pos == 0x0) {
+    char * fun_pos = strstr(buf, ":") ;
+    if (fun_pos + 1 == 0x0) {
         perror("get_bitmap: strstr: LLVM symbolizer failed to find a function name") ;
         exit(1) ;
     }
-    strncpy(trace->fun_names[index], fun_pos + 3, strlen(fun_pos + 3) - 1) ;
+    strncpy(trace->fun_names[index], fun_pos + 1, strlen(fun_pos + 1) - 1) ;
 }
 
 uint8_t * 
