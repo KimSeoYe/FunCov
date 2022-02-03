@@ -1,7 +1,12 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <execinfo.h>
 #include <sanitizer/coverage_interface.h>
+
+#define BT_BUF_SIZE 100
 
 /**
  * README
@@ -45,19 +50,31 @@ extern void __sanitizer_cov_trace_pc_guard(uint32_t *guard) {
   // The values of `*guard` are as you set them in
   // __sanitizer_cov_trace_pc_guard_init and so you can make them consecutive
   // and use them to dereference an array or a bit vector.
-  void * PC = __builtin_return_address(0);
-  char PcDescr[1024];
-  // This function is a part of the sanitizer run-time.
-  // To use it, link with AddressSanitizer or other sanitizer.
-  __sanitizer_symbolize_pc(PC, "%f", PcDescr, sizeof(PcDescr));
+  // void * PC = __builtin_return_address(0);
+  // char PcDescr[1024];
+  // // This function is a part of the sanitizer run-time.
+  // // To use it, link with AddressSanitizer or other sanitizer.
+  // __sanitizer_symbolize_pc(PC, "%f", PcDescr, sizeof(PcDescr));
 
-  void * caller_pc = __builtin_return_address(1) ;
-  char caller_descr[1024] ;
-  __sanitizer_symbolize_pc(caller_pc, "%f:%l", caller_descr, sizeof(caller_descr));
+  // void * caller_pc = __builtin_return_address(1) ;
+  // char caller_descr[1024] ;
+  // __sanitizer_symbolize_pc(caller_pc, "%f:%l", caller_descr, sizeof(caller_descr));
+
+  size_t nptrs ;
+  void * buffer[BT_BUF_SIZE] ;
+  char ** strings ;
+
+  nptrs = backtrace(buffer, BT_BUF_SIZE) ;
+  strings = backtrace_symbols(buffer, nptrs) ;
+  if (strings == 0x0) {
+    perror("__sanitizer_cov_trace_pc_guard: backtrace_symbols") ;
+    exit(1) ;
+  }
 
   FILE * fp = fopen("cov.log", "ab") ;
   char log[2048] ;
-  sprintf(log, "%d:%s::%s\n", *guard, PcDescr, caller_descr) ;
+  // sprintf(log, "%d:%s::%s\n", *guard, PcDescr, caller_descr) ;
+  sprintf(log, "CALLEE:%s::CALLER:%s\n", strings[1], strings[2]) ;
   fwrite(log, strlen(log), 1, fp) ;
   fclose(fp) ;
 }
