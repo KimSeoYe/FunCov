@@ -30,10 +30,9 @@ typedef struct cov_stat {
     shm_map_t shm_map ;
 } cov_stat_t ;
 
-// int get_cov_stats (p_entry_t ** trace, cov_stat_t * stat, config_t * conf, int turn, int exit_code) ;
-
-int create_shm (int key, void ** ptr, int type_size) ;
-
-void remove_shm (int shm_id, void * shm_addr) ;
+int get_shm (int key, int type_size) ;
+void * attatch_shm (int shm_id) ;
+void detatch_shm (void * shm_addr) ;
+void remove_shm (int shm_id) ;
 
 #endif

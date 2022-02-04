@@ -26,10 +26,11 @@
 static config_t conf ;
 static cov_stat_t * cov_stats ; // save
 static unsigned int * trace_cov ; 
-static shm_map_t * trace_map ; // shm
+// static shm_map_t * trace_map ; // shm  // TODO. no need to use shm...
+static shm_map_t trace_map ;
 static cov_stat_t * curr_stat ; // shm
 
-static int trace_map_shmid ;
+// static int trace_map_shmid ;
 static int curr_stat_shmid ;
 
 /**
@@ -205,10 +206,18 @@ print_config ()
 }
 
 void
-remove_shared_mems ()
+remove_shared_mem ()
 {
-    remove_shm(curr_stat_shmid, (void *)curr_stat) ;
-    remove_shm(trace_map_shmid, (void *)trace_map) ;
+    detatch_shm((void *)curr_stat) ;
+    remove_shm(curr_stat_shmid) ;
+}
+
+void
+shm_init ()
+{
+    curr_stat_shmid = get_shm(CURR_KEY, sizeof(cov_stat_t)) ;
+    curr_stat = attatch_shm(curr_stat_shmid) ;
+    memset(curr_stat, 0, sizeof(cov_stat_t)) ;
 }
 
 void 
@@ -227,15 +236,9 @@ funcov_init (int argc, char * argv[])
 
     trace_cov = (unsigned int *) malloc(sizeof(unsigned int) * conf.input_file_cnt) ;
     memset(trace_cov, 0, sizeof(unsigned int) * conf.input_file_cnt) ;
+    memset(&trace_map, 0, sizeof(shm_map_t)) ;
     
-    void * tmp_ptr ;
-    curr_stat_shmid = create_shm(CURR_KEY, &tmp_ptr, sizeof(cov_stat_t)) ;
-    curr_stat = (cov_stat_t *) tmp_ptr ;
-    memset(curr_stat, 0, sizeof(cov_stat_t)) ;
-
-    trace_map_shmid = create_shm(TRACE_KEY, &tmp_ptr, sizeof(shm_map_t)) ;
-    trace_map = (shm_map_t *) tmp_ptr ;
-    memset(trace_map, 0, sizeof(shm_map_t)) ;
+    shm_init() ;
 }
 
 
@@ -252,7 +255,7 @@ timeout_handler (int sig)
         perror("timeout") ;
         if (kill(child_pid, SIGINT) == -1) {
             perror("timeout_handler: kill") ;
-            remove_shared_mems() ;
+            remove_shared_mem() ;
             exit(1) ;
         }
     }
@@ -266,7 +269,7 @@ execute_target (int turn)
     FILE * fp = fopen(conf.input_files[turn].file_path, "rb") ;
     if (fp == 0x0) {
         perror("execute_target: fopen") ;
-        remove_shared_mems() ;
+        remove_shared_mem() ;
         exit(1) ;
     }
 
@@ -304,7 +307,7 @@ execute_target (int turn)
         char * args[] = { conf.binary_path, (char *)0x0 } ;
         if (execv(conf.binary_path, args) == -1) {
             perror("execute_target: execv") ;
-            remove_shared_mems() ;
+            remove_shared_mem() ;
             exit(1) ;
         }
     } 
@@ -312,7 +315,7 @@ execute_target (int turn)
         char * args[] = { conf.binary_path, conf.input_files[turn].file_path, (char *)0x0 } ;
         if (execv(conf.binary_path, args) == -1) {
             perror("execute_target: execv") ;
-            remove_shared_mems() ;
+            remove_shared_mem() ;
             exit(1) ;
         }
     }
@@ -344,7 +347,7 @@ write_out_file (int turn, int fd)
     FILE * fp = fopen(path, "wb") ;
     if (fp == 0x0) {
         perror("write_out_file: fopen") ;
-        remove_shared_mems() ;
+        remove_shared_mem() ;
         exit(1) ;
     }
 
@@ -408,7 +411,7 @@ run (int turn)
 
 pipe_err:
     perror("run: pipe") ;
-    remove_shared_mems() ;
+    remove_shared_mem() ;
     exit(1) ;
 }
 
@@ -418,7 +421,7 @@ write_log_csv (char * cov_log_path, char * trace_cov_path)
     FILE * fp = fopen(cov_log_path, "wb") ;
     if (fp == 0x0) {
         perror("write_log_csv: fopen") ;
-        remove_shared_mems() ;
+        remove_shared_mem() ;
         exit(1) ;
     }
     fprintf(fp, "id,fun_cov,exit_code,filename\n") ;
@@ -430,7 +433,7 @@ write_log_csv (char * cov_log_path, char * trace_cov_path)
     fp = fopen(trace_cov_path, "wb") ;
     if (fp == 0x0) {
         perror("write_log_csv: fopen") ;
-        remove_shared_mems() ;
+        remove_shared_mem() ;
         exit(1) ;
     }
     fprintf(fp, "id,accumulated_cov\n") ;
@@ -453,7 +456,7 @@ write_result_maps(char * bitmaps_dir_path)
         FILE * fp = fopen(bitmap_file_path, "wb") ;
         if (fp == 0x0) {
             perror("write_result_maps: fopen") ;
-            remove_shared_mems() ;
+            remove_shared_mem() ;
             exit(1) ;
         }
 
@@ -479,7 +482,7 @@ write_result_funcovs(char * funcov_dir_path)
         FILE * fp = fopen(funcov_file_path, "wb") ;
         if (fp == 0x0) {
             perror("write_result_funcovs: fopen") ;
-            remove_shared_mems() ;
+            remove_shared_mem() ;
             exit(1) ;
         }
 
@@ -530,7 +533,7 @@ remove_cov_log()
     sprintf(cov_log_path, "%s/%s", conf.output_dir_path, LOGNAME) ;
     if (remove(cov_log_path) == -1) {
         perror("remove_cov_log: remove") ;
-        remove_shared_mems() ;
+        remove_shared_mem() ;
         exit(1) ;
     }
 }
@@ -544,7 +547,7 @@ funcov_destroy ()
     free(cov_stats) ;
     free(trace_cov) ;
 
-    remove_shared_mems() ;
+    remove_shared_mem() ;
 
     printf("WE ARE DONE!\n\n") ;
 }
@@ -560,8 +563,8 @@ main (int argc, char * argv[])
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
         printf("* [%d] %s: ", turn, conf.input_files[turn].file_path) ;
         int exit_code = run(turn) ;
-        
-        // trace_cov[turn] = get_cov_stats(trace_map, &cov_stats[turn], &conf, turn, exit_code) ; // TODO. shared memory
+        // TODO. copy(cov_stats) & union (trace_map) using curr_stat
+        // TODO. cov_stats : id, exit_code
         printf("cov=%d, acc_cov=%d\n", cov_stats[turn].fun_coverage, trace_cov[turn]) ;
     }
     printf("\n") ;
