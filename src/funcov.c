@@ -10,7 +10,7 @@
 #include <sys/types.h>
 
 #include "../include/funcov.h"
-#include "../include/get_coverage.h"
+#include "../include/shm_coverage.h"
 
 #define DEBUG_COV
 
@@ -26,10 +26,15 @@
 #define FUNDIR "covered_funs"
 #define LOGDIR "logs"
 
+// TODO. check map_entry_t ... (memset, fwrite, ...)
 static config_t conf ;
-static cov_stat_t * cov_stats ;
+static cov_stat_t * cov_stats ; // save
 static unsigned int * trace_cov ; 
-static p_entry_t trace_map[MAP_ROW_UNIT][MAP_COL_UNIT] ;
+static shm_map_t * trace_map ; // shm
+static cov_stat_t * curr_stat ; // shm
+
+static int trace_map_shmid ;
+static int curr_stat_shmid ;
 
 /**
  * usage: ./funcov -i [input_dir] -o [output_dir] -x [executable_binary] ...
@@ -211,6 +216,13 @@ print_config ()
     printf("\n") ;
 }
 
+void
+remove_shared_mems ()
+{
+    remove_shm(curr_stat_shmid, (void *)curr_stat) ;
+    remove_shm(trace_map_shmid, (void *)trace_map) ;
+}
+
 void 
 funcov_init (int argc, char * argv[]) 
 {
@@ -222,12 +234,20 @@ funcov_init (int argc, char * argv[])
     cov_stats = (cov_stat_t *) malloc(sizeof(cov_stat_t) * conf.input_file_cnt) ;
     for (int i = 0; i < conf.input_file_cnt; i++) {
         cov_stats[i].fun_coverage = 0 ;
-        memset(cov_stats[i].map, 0, sizeof(p_entry_t) * MAP_SIZE) ;
+        memset(&cov_stats[i].shm_map, 0, sizeof(shm_map_t)) ;
     }
 
     trace_cov = (unsigned int *) malloc(sizeof(unsigned int) * conf.input_file_cnt) ;
     memset(trace_cov, 0, sizeof(unsigned int) * conf.input_file_cnt) ;
-    memset(trace_map, 0, sizeof(p_entry_t) * MAP_SIZE) ;
+    
+    void * tmp_ptr ;
+    curr_stat_shmid = create_shm(CURR_KEY, &tmp_ptr, sizeof(cov_stat_t)) ;
+    curr_stat = (cov_stat_t *) tmp_ptr ;
+    memset(curr_stat, 0, sizeof(cov_stat_t)) ;
+
+    trace_map_shmid = create_shm(TRACE_KEY, &tmp_ptr, sizeof(shm_map_t)) ;
+    trace_map = (shm_map_t *) tmp_ptr ;
+    memset(trace_map, 0, sizeof(shm_map_t)) ;
 }
 
 
@@ -244,6 +264,7 @@ timeout_handler (int sig)
         perror("timeout") ;
         if (kill(child_pid, SIGINT) == -1) {
             perror("timeout_handler: kill") ;
+            remove_shared_mems() ;
             exit(1) ;
         }
     }
@@ -257,6 +278,7 @@ execute_target (int turn)
     FILE * fp = fopen(conf.input_files[turn].file_path, "rb") ;
     if (fp == 0x0) {
         perror("execute_target: fopen") ;
+        remove_shared_mems() ;
         exit(1) ;
     }
 
@@ -294,6 +316,7 @@ execute_target (int turn)
         char * args[] = { conf.binary_path, (char *)0x0 } ;
         if (execv(conf.binary_path, args) == -1) {
             perror("execute_target: execv") ;
+            remove_shared_mems() ;
             exit(1) ;
         }
     } 
@@ -301,6 +324,7 @@ execute_target (int turn)
         char * args[] = { conf.binary_path, conf.input_files[turn].file_path, (char *)0x0 } ;
         if (execv(conf.binary_path, args) == -1) {
             perror("execute_target: execv") ;
+            remove_shared_mems() ;
             exit(1) ;
         }
     }
@@ -360,6 +384,7 @@ write_log_file (int turn)
 
 fopen_err:
     perror("write_log_file: fopen") ;
+    remove_shared_mems() ;
     exit(1) ;
 }
 #endif
@@ -373,6 +398,7 @@ write_out_file (int turn, int fd)
     FILE * fp = fopen(path, "wb") ;
     if (fp == 0x0) {
         perror("write_out_file: fopen") ;
+        remove_shared_mems() ;
         exit(1) ;
     }
 
@@ -439,6 +465,7 @@ run (int turn)
 
 pipe_err:
     perror("run: pipe") ;
+    remove_shared_mems() ;
     exit(1) ;
 }
 
@@ -448,6 +475,7 @@ write_log_csv (char * cov_log_path, char * trace_cov_path)
     FILE * fp = fopen(cov_log_path, "wb") ;
     if (fp == 0x0) {
         perror("write_log_csv: fopen") ;
+        remove_shared_mems() ;
         exit(1) ;
     }
     fprintf(fp, "id,fun_cov,exit_code,filename\n") ;
@@ -459,6 +487,7 @@ write_log_csv (char * cov_log_path, char * trace_cov_path)
     fp = fopen(trace_cov_path, "wb") ;
     if (fp == 0x0) {
         perror("write_log_csv: fopen") ;
+        remove_shared_mems() ;
         exit(1) ;
     }
     fprintf(fp, "id,accumulated_cov\n") ;
@@ -481,11 +510,12 @@ write_result_maps(char * bitmaps_dir_path)
         FILE * fp = fopen(bitmap_file_path, "wb") ;
         if (fp == 0x0) {
             perror("write_result_maps: fopen") ;
+            remove_shared_mems() ;
             exit(1) ;
         }
 
-        size_t s = fwrite(cov_stats[turn].map, 1, sizeof(p_entry_t) * MAP_SIZE, fp) ;
-        if (s != sizeof(p_entry_t) * MAP_SIZE) {
+        size_t s = fwrite(&cov_stats[turn].shm_map, 1, sizeof(shm_map_t), fp) ;
+        if (s != sizeof(shm_map_t)) {
             perror("write_result_maps: fwrite") ;
         }
 
@@ -506,18 +536,14 @@ write_result_funcovs(char * funcov_dir_path)
         FILE * fp = fopen(funcov_file_path, "wb") ;
         if (fp == 0x0) {
             perror("write_result_funcovs: fopen") ;
+            remove_shared_mems() ;
             exit(1) ;
         }
 
-        // fprintf(fp, "id,covered_function\n") ;
-        // for (int i = 0; i < cov_stats[turn].bitmap_size; i++) {
-        //     if (cov_stats[turn].bitmap[i] != 0) fprintf(fp, "%d,%s\n", i, trace.fun_names[i]) ;
-        // }
         fprintf(fp, "callee,caller,caller_line\n") ;
         for (int i = 0; i < MAP_ROW_UNIT; i++) {
-            for (int j = 0; j < MAP_COL_UNIT; j++) {
-                if (cov_stats[turn].map[i][j].hit_count == 0) break ;
-                fprintf(fp, "%s\n", cov_stats[turn].map[i][j].cov_string) ; 
+            for (int j = 0; j < cov_stats[turn].shm_map.collision_cnt[i]; j++) {
+                fprintf(fp, "%s\n", cov_stats[turn].shm_map.map[i][j].cov_string) ; 
             }
         }
 
@@ -569,6 +595,7 @@ remove_cov_log()
     sprintf(cov_log_path, "%s/%s", conf.output_dir_path, LOGNAME) ;
     if (remove(cov_log_path) == -1) {
         perror("remove_cov_log: remove") ;
+        remove_shared_mems() ;
         exit(1) ;
     }
 }
@@ -581,6 +608,8 @@ funcov_destroy ()
     if (conf.input_files != 0x0) free(conf.input_files) ;
     free(cov_stats) ;
     free(trace_cov) ;
+
+    remove_shared_mems() ;
 
     printf("WE ARE DONE!\n\n") ;
 }
