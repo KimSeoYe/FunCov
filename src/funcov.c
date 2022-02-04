@@ -556,7 +556,7 @@ main (int argc, char * argv[])
     }
     printf("\n") ;
 
-    print_cov_results() ;  
+    print_cov_results() ;  // TODO. pc => line#
     
     funcov_destroy() ;
 
