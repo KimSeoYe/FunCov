@@ -26,11 +26,8 @@
 static config_t conf ;
 static cov_stat_t * cov_stats ; // save
 static unsigned int * trace_cov ; 
-// static shm_map_t * trace_map ; // shm  // TODO. no need to use shm...
 static shm_map_t trace_map ;
 static cov_stat_t * curr_stat ; // shm
-
-// static int trace_map_shmid ;
 static int curr_stat_shmid ;
 
 /**
@@ -387,6 +384,8 @@ save_results (int turn)
 int
 run (int turn)
 {
+    memset(curr_stat, 0, sizeof(cov_stat_t)) ;
+
     if (pipe(stdin_pipe) != 0) goto pipe_err ;
     if (pipe(stdout_pipe) != 0) goto pipe_err ;
     if (pipe(stderr_pipe) != 0) goto pipe_err ;
@@ -488,10 +487,11 @@ write_result_funcovs(char * funcov_dir_path)
 
         fprintf(fp, "callee,caller,caller_line\n") ;
         for (int i = 0; i < MAP_ROW_UNIT; i++) {
-            for (int j = 0; j < cov_stats[turn].shm_map.collision_cnt[i]; j++) {
+            for (int j = 0; j < MAP_COL_UNIT; j++) {
+                if (cov_stats[turn].shm_map.map[i][j].hit_count == 0) break ;
                 fprintf(fp, "%s\n", cov_stats[turn].shm_map.map[i][j].cov_string) ; 
             }
-        }
+        }   
 
         fclose(fp) ;
     }
@@ -527,22 +527,8 @@ print_cov_results ()
 }
 
 void
-remove_cov_log()
-{
-    char cov_log_path[PATH_MAX + 8] ;
-    sprintf(cov_log_path, "%s/%s", conf.output_dir_path, LOGNAME) ;
-    if (remove(cov_log_path) == -1) {
-        perror("remove_cov_log: remove") ;
-        remove_shared_mem() ;
-        exit(1) ;
-    }
-}
-
-void
 funcov_destroy ()
 {
-    remove_cov_log() ;
-
     if (conf.input_files != 0x0) free(conf.input_files) ;
     free(cov_stats) ;
     free(trace_cov) ;
@@ -563,7 +549,8 @@ main (int argc, char * argv[])
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
         printf("* [%d] %s: ", turn, conf.input_files[turn].file_path) ;
         int exit_code = run(turn) ;
-        // TODO. copy(cov_stats) & union (trace_map) using curr_stat
+        memcpy(&cov_stats[turn], curr_stat, sizeof(cov_stat_t)) ;
+        // TODO. union (trace_map) using curr_stat
         // TODO. cov_stats : id, exit_code
         printf("cov=%d, acc_cov=%d\n", cov_stats[turn].fun_coverage, trace_cov[turn]) ;
     }

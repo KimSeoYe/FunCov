@@ -11,11 +11,11 @@
 
 #define MAP_ROW_UNIT 4096
 #define MAP_COL_UNIT 64
-#define MAP_SIZE MAP_ROW_UNIT * MAP_COL_UNIT // Q.
+#define MAP_SIZE MAP_ROW_UNIT * MAP_COL_UNIT 
 
 typedef struct map_elem {
     unsigned int hit_count ;
-    char cov_string[BUF_SIZE] ; // "callee,caller,line"
+    char cov_string[BUF_SIZE] ; // "callee,caller,PC"
 } map_elem_t ;
 
 typedef struct shm_map {

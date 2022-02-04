@@ -35,8 +35,8 @@ __sanitizer_cov_trace_pc_guard_init(uint32_t *start, uint32_t *stop)
 
 /**
  * strings format
- * [2] /home/kimseoye/git/FunCov/test/simple_example/example(negative+0x17) [0x512437]
- * [3] /home/kimseoye/git/FunCov/test/simple_example/example(main+0x1a5) [0x512685]
+ * /home/kimseoye/git/FunCov/test/simple_example/example(negative+0x17) [0x512437]
+ * /home/kimseoye/git/FunCov/test/simple_example/example(main+0x1a5) [0x512685]
 */
 
 void
@@ -69,14 +69,36 @@ parse_string (char * cov_string, char ** strings)
   sprintf(cov_string, "%s,%s,%s", callee_name, caller_name, caller_pc) ;
 }
 
+unsigned int
+hash_function (char * cov_string)
+{
+  unsigned int value = 0 ;
+
+  for (int i = 0; i < strlen(cov_string); i++) {
+    value = cov_string[i] + 31 * value ;
+  }
+
+  return value % MAP_ROW_UNIT ;
+}
+
 void
 get_coverage (char ** strings)
 {
   curr_stat = attatch_shm(curr_stat_shmid) ;
-  memset(curr_stat, 0, sizeof(cov_stat_t)) ;
 
   char cov_string[BUF_SIZE] ;
   parse_string(cov_string, strings) ;
+
+  unsigned int id = hash_function(cov_string) ;
+  if (curr_stat->shm_map.map[id][0].hit_count == 0) {
+    curr_stat->shm_map.map[id][0].hit_count++ ;
+    strcpy(curr_stat->shm_map.map[id][0].cov_string, cov_string) ;
+  }
+  else {
+    int col_idx = ++(curr_stat->shm_map.collision_cnt[id]) ;
+    curr_stat->shm_map.map[id][col_idx].hit_count++ ;
+    strcpy(curr_stat->shm_map.map[id][col_idx].cov_string, cov_string) ;
+  }
 
   detatch_shm(curr_stat) ;
 }
