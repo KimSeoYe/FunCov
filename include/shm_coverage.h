@@ -9,7 +9,7 @@
 #define CURR_KEY 1111
 #define TRACE_KEY 2222
 
-#define MAP_ROW_UNIT 4096
+#define MAP_ROW_UNIT 2048   // WARNING: memory limit...
 #define MAP_COL_UNIT 64
 #define MAP_SIZE MAP_ROW_UNIT * MAP_COL_UNIT 
 
