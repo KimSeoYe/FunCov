@@ -11,6 +11,7 @@
 
 #include "../include/funcov.h"
 #include "../include/shm_coverage.h"
+#include "../include/get_coverage.h"
 
 #define INPUT_CNT_UNIT 512
 
@@ -548,10 +549,16 @@ main (int argc, char * argv[])
     printf("RUN\n") ;
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
         printf("* [%d] %s: ", turn, conf.input_files[turn].file_path) ;
+        
         int exit_code = run(turn) ;
+
+        curr_stat->id = turn ;
+        curr_stat->exit_code = exit_code ;
+        curr_stat->fun_coverage = count_coverage(&(curr_stat->shm_map)) ;
         memcpy(&cov_stats[turn], curr_stat, sizeof(cov_stat_t)) ;
-        // TODO. union (trace_map) using curr_stat
-        // TODO. cov_stats : id, exit_code
+
+        trace_cov[turn] = get_trace_coverage(&trace_map, curr_stat, trace_cov[turn - 1]) ;
+        
         printf("cov=%d, acc_cov=%d\n", cov_stats[turn].fun_coverage, trace_cov[turn]) ;
     }
     printf("\n") ;
