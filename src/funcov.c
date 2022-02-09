@@ -23,7 +23,6 @@
 #define BITDIR "bitmaps"    // TODO. change name >> hitmaps
 #define FUNDIR "covered_funs"
 
-// TODO. check map_entry_t ... (memset, fwrite, ...)
 static config_t conf ;
 static cov_stat_t * cov_stats ; // save
 static unsigned int * trace_cov ; 
@@ -160,19 +159,19 @@ read_input_dir ()
         exit(1) ;
     }
 
-    conf.input_files = (input_t *) malloc(sizeof(input_t) * INPUT_CNT_UNIT) ;
+    conf.input_files = (char **) malloc(sizeof(char *) * INPUT_CNT_UNIT) ;
 
     while ((entry = readdir(dir_ptr)) != 0x0) {
         if (file_cnt != 0x0 && file_cnt % INPUT_CNT_UNIT == 0) {
-            conf.input_files = realloc(conf.input_files, sizeof(input_t) * (file_cnt / INPUT_CNT_UNIT + 1) * INPUT_CNT_UNIT) ;
+            conf.input_files = realloc(conf.input_files, sizeof(char *) * (file_cnt / INPUT_CNT_UNIT + 1) * INPUT_CNT_UNIT) ;
             if (conf.input_files == 0x0) {
                 perror("read_input_dir: realloc") ;
                 exit(1) ;
             }
         }
         if (entry->d_name[0] != '.') {
-            sprintf(conf.input_files[file_cnt].file_path, "%s/%s", conf.input_dir_path, entry->d_name) ;
-            conf.input_files[file_cnt].fun_cov = 0 ;
+            conf.input_files[file_cnt] = (char *) malloc(sizeof(char) * (strlen(conf.input_dir_path) + strlen(entry->d_name) + 2)) ;
+            sprintf(conf.input_files[file_cnt], "%s/%s", conf.input_dir_path, entry->d_name) ;
             file_cnt++ ;
         }
     }
@@ -200,7 +199,7 @@ print_config ()
     printf("* INPUT FILE CNT: %d\n", conf.input_file_cnt) ;
     printf("* INPUT FILES\n") ;
     for (int i = 0; i < conf.input_file_cnt; i++) {
-        printf("  [%d] %s\n", i, conf.input_files[i].file_path) ;
+        printf("  [%d] %s\n", i, conf.input_files[i]) ;
     }
     printf("\n") ;
 }
@@ -266,7 +265,7 @@ execute_target (int turn)
 {
     alarm(3) ;
 
-    FILE * fp = fopen(conf.input_files[turn].file_path, "rb") ;
+    FILE * fp = fopen(conf.input_files[turn], "rb") ;
     if (fp == 0x0) {
         perror("execute_target: fopen") ;
         remove_shared_mem() ;
@@ -312,7 +311,7 @@ execute_target (int turn)
         }
     } 
     else if (conf.input_type == ARG_FILENAME) {
-        char * args[] = { conf.binary_path, conf.input_files[turn].file_path, (char *)0x0 } ;
+        char * args[] = { conf.binary_path, conf.input_files[turn], (char *)0x0 } ;
         if (execv(conf.binary_path, args) == -1) {
             perror("execute_target: execv") ;
             remove_shared_mem() ;
@@ -325,7 +324,7 @@ void
 get_result_file_path (char * path, int turn, int fd)
 {
     char input_filename[BUF_SIZE] ;
-    strcpy(input_filename, conf.input_files[turn].file_path + strlen(conf.input_dir_path) + 1) ;
+    strcpy(input_filename, conf.input_files[turn] + strlen(conf.input_dir_path) + 1) ;
 
     switch (fd) {
     case STDOUT_FD:
@@ -429,8 +428,8 @@ write_log_csv (char * cov_log_path, char * trace_cov_path)
     }
     fprintf(fp, "id,fun_cov,exit_code,filename\n") ;
     for (int i = 0; i < conf.input_file_cnt; i++) {
-        printf("* [%d] %s\n", i, conf.input_files[i].file_path) ;
-        fprintf(fp, "%d,%d,%d,\"%s\"\n", cov_stats[i].id, cov_stats[i].fun_coverage, cov_stats[i].exit_code, conf.input_files[i].file_path) ;
+        printf("* [%d] %s\n", i, conf.input_files[i]) ;
+        fprintf(fp, "%d,%d,%d,\"%s\"\n", cov_stats[i].id, cov_stats[i].fun_coverage, cov_stats[i].exit_code, conf.input_files[i]) ;
     }
     fclose(fp) ;
     printf("\n") ;
@@ -444,7 +443,7 @@ write_log_csv (char * cov_log_path, char * trace_cov_path)
     }
     fprintf(fp, "id,accumulated_cov\n") ;
     for (int i = 0; i < conf.input_file_cnt; i++) {
-        printf("* [%d] %s\n", i, conf.input_files[i].file_path) ;
+        printf("* [%d] %s\n", i, conf.input_files[i]) ;
         fprintf(fp, "%d,%d\n", cov_stats[i].id, trace_cov[i]) ;
     }
     fclose(fp) ;
@@ -457,7 +456,7 @@ write_result_maps(char * bitmaps_dir_path)
 {
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
         char input_filename[PATH_MAX] ;
-        strcpy(input_filename, conf.input_files[turn].file_path + strlen(conf.input_dir_path) + 1) ;
+        strcpy(input_filename, conf.input_files[turn] + strlen(conf.input_dir_path) + 1) ;
         
         char bitmap_file_path[PATH_MAX + 32] ;
         sprintf(bitmap_file_path, "%s/%s", bitmaps_dir_path, input_filename) ;
@@ -485,10 +484,10 @@ write_result_funcovs(char * funcov_dir_path)
     printf("WRITE %s for...\n", funcov_dir_path) ;
 
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
-        printf("* [%d] %s\n", turn, conf.input_files[turn].file_path) ;
+        printf("* [%d] %s\n", turn, conf.input_files[turn]) ;
 
         char input_filename[PATH_MAX] ;
-        strcpy(input_filename, conf.input_files[turn].file_path + strlen(conf.input_dir_path) + 1) ;
+        strcpy(input_filename, conf.input_files[turn] + strlen(conf.input_dir_path) + 1) ;
         
         char funcov_file_path[PATH_MAX + 32] ;
         sprintf(funcov_file_path, "%s/%s.csv", funcov_dir_path, input_filename) ;
@@ -549,7 +548,10 @@ print_cov_results ()
 void
 funcov_destroy ()
 {
-    if (conf.input_files != 0x0) free(conf.input_files) ;
+    for (int i = 0; i < conf.input_file_cnt; i++) {
+        free(conf.input_files[i]) ;
+    }
+    free(conf.input_files) ;
     free(cov_stats) ;
     free(trace_cov) ;
 
@@ -567,7 +569,7 @@ main (int argc, char * argv[])
 
     printf("RUN\n") ;
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
-        printf("* [%d] %s: ", turn, conf.input_files[turn].file_path) ;
+        printf("* [%d] %s: ", turn, conf.input_files[turn]) ;
         
         int exit_code = run(turn) ;
 
