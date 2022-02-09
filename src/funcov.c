@@ -420,7 +420,7 @@ pipe_err:
 void
 write_log_csv (char * cov_log_path, char * trace_cov_path)
 {
-    printf("WRITE %s\n", cov_log_path) ;
+    printf("WRITE %s for...\n", cov_log_path) ;
     FILE * fp = fopen(cov_log_path, "wb") ;
     if (fp == 0x0) {
         perror("write_log_csv: fopen") ;
@@ -435,7 +435,7 @@ write_log_csv (char * cov_log_path, char * trace_cov_path)
     fclose(fp) ;
     printf("\n") ;
 
-    printf("WRITE %s\n", trace_cov_path) ;
+    printf("WRITE %s for...\n", trace_cov_path) ;
     fp = fopen(trace_cov_path, "wb") ;
     if (fp == 0x0) {
         perror("write_log_csv: fopen") ;
@@ -482,7 +482,7 @@ write_result_maps(char * bitmaps_dir_path)
 void
 write_result_funcovs(char * funcov_dir_path) 
 {
-    printf("WRITE %s\n", funcov_dir_path) ;
+    printf("WRITE %s for...\n", funcov_dir_path) ;
 
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
         printf("* [%d] %s\n", turn, conf.input_files[turn].file_path) ;
@@ -528,6 +528,12 @@ print_cov_results ()
     char funcov_dir_path[PATH_MAX + 32] ;
     sprintf(funcov_dir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;
 
+    write_log_csv(cov_log_path, trace_cov_path) ;
+#ifdef SAVE_MAP 
+    write_result_maps(bitmaps_dir_path) ;
+#endif
+    write_result_funcovs(funcov_dir_path) ;
+
     printf("RESULT SUMMARY\n") ;
     printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
     printf("* TOTAL COVERAGE: %d\n", trace_cov[conf.input_file_cnt - 1]) ;
@@ -538,12 +544,6 @@ print_cov_results ()
 #endif
     printf("* COVERED FUNTIONS PER INPUT SAVED IN %s\n", funcov_dir_path) ;
     printf("\n") ;
-
-    write_log_csv(cov_log_path, trace_cov_path) ;
-#ifdef SAVE_MAP 
-    write_result_maps(bitmaps_dir_path) ;
-#endif
-    write_result_funcovs(funcov_dir_path) ;
 }
 
 void

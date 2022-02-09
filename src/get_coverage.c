@@ -4,16 +4,16 @@
 unsigned int
 count_coverage (shm_map_t * shm_map)
 {
-    int trace_cov = 0 ;
+    int cov = 0 ;
 
     for (int i = 0; i < MAP_ROW_UNIT; i++) {
         for (int j = 0; j < MAP_COL_UNIT; j++) {
             if (shm_map->map[i][j].hit_count == 0) break ;
-            trace_cov++ ;
+            cov++ ;
         }
     }
 
-    return trace_cov ;
+    return cov ;
 }
 
 unsigned int
@@ -28,9 +28,9 @@ get_trace_coverage(shm_map_t * trace_map, cov_stat_t * curr_stat, unsigned int p
             if (curr_stat->shm_map.map[i][j].hit_count == 0) break ;
             if (trace_map->map[i][j].hit_count == 0) {
                 strcpy(trace_map->map[i][j].cov_string, curr_stat->shm_map.map[i][j].cov_string) ;
+                trace_cov++ ;
             }
             trace_map->map[i][j].hit_count += curr_stat->shm_map.map[i][j].hit_count ;
-            trace_cov++ ;
         }
     }
 
