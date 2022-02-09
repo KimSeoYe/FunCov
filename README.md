@@ -59,7 +59,7 @@ main ()
 
 ### 1. Prepare your target program
 
-1. You need to use the provided `trace-pc-guard.c` and `shm_coverage.c` for your target project. Build your project using `clang` w/ `src/trace-pc-guard.c` and `src/shm_coverage.c`, especially using `-rdynamic`, `-fsanitize=address` and `-fsanitize-coverage=func,trace-pc-guard` options.
+You need to use the provided `trace-pc-guard.c` and `shm_coverage.c` for your target project. Build your project using `clang` w/ `src/trace-pc-guard.c` and `src/shm_coverage.c`, especially using `-rdynamic`, `-fsanitize=address` and `-fsanitize-coverage=func,trace-pc-guard` options.
 
 ```bash
 cp trace-pc-guard.c test/simple_example/
