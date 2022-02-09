@@ -19,4 +19,5 @@ typedef struct config {    // Q. don't need to use a struct?
     char ** input_files ;
 } config_t ;
 
+
 #endif

@@ -12,6 +12,7 @@
 #include "../include/funcov.h"
 #include "../include/shm_coverage.h"
 #include "../include/get_coverage.h"
+#include "../include/translate_addr.h"
 
 // #define SAVE_MAP
 
@@ -419,12 +420,6 @@ pipe_err:
 }
 
 void
-translate_pc (char *** translated_locations)
-{
-    
-}
-
-void
 write_log_csv (char * cov_log_path, char * trace_cov_path)
 {
     printf("WRITE %s for...\n", cov_log_path) ;
@@ -487,7 +482,7 @@ write_result_maps(char * bitmaps_dir_path)
 #endif
 
 void
-write_covered_funs(char * funcov_dir_path) 
+write_covered_funs(char * funcov_dir_path, location_t * translated_locations) 
 {
     printf("WRITE %s for...\n", funcov_dir_path) ;
 
@@ -521,24 +516,8 @@ write_covered_funs(char * funcov_dir_path)
 }
 
 void
-print_cov_results ()
+print_summary (char * cov_log_path, char * trace_cov_path, char * funcov_dir_path)
 {
-    char cov_log_path[PATH_MAX + 32] ;
-    char trace_cov_path[PATH_MAX + 32] ;
-    sprintf(cov_log_path, "%s/%s", conf.output_dir_path, "per_cov_log.csv") ;
-    sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
-    write_log_csv(cov_log_path, trace_cov_path) ;
-
-    char funcov_dir_path[PATH_MAX + 32] ;
-    sprintf(funcov_dir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;
-    write_covered_funs(funcov_dir_path) ;
-
-#ifdef SAVE_MAP
-    char bitmaps_dir_path[PATH_MAX + 32] ;
-    sprintf(bitmaps_dir_path, "%s/%s", conf.output_dir_path, BITDIR) ;
-    write_result_maps(bitmaps_dir_path) ;
-#endif
-    
     printf("RESULT SUMMARY\n") ;
     printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
     printf("* TOTAL COVERAGE: %d\n", trace_cov[conf.input_file_cnt - 1]) ;
@@ -549,6 +528,38 @@ print_cov_results ()
 #endif
     printf("* COVERED FUNTIONS PER INPUT SAVED IN %s\n", funcov_dir_path) ;
     printf("\n") ;
+}
+
+void
+save_final_results ()
+{
+    char cov_log_path[PATH_MAX + 32] ;
+    char trace_cov_path[PATH_MAX + 32] ;
+    sprintf(cov_log_path, "%s/%s", conf.output_dir_path, "per_cov_log.csv") ;
+    sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
+    write_log_csv(cov_log_path, trace_cov_path) ;
+
+    location_t * translated_locations = (location_t *) malloc(sizeof(location_t) * trace_cov[conf.input_file_cnt - 1]) ;
+    if (translated_locations == 0x0) {
+        perror("save_final_results: malloc") ;
+        remove_shared_mem() ;
+        exit(1) ;
+    }
+    translate_pc_values(translated_locations) ;  
+
+    char funcov_dir_path[PATH_MAX + 32] ;
+    sprintf(funcov_dir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;
+    write_covered_funs(funcov_dir_path, translated_locations) ;
+
+    free(translated_locations) ;
+
+#ifdef SAVE_MAP
+    char bitmaps_dir_path[PATH_MAX + 32] ;
+    sprintf(bitmaps_dir_path, "%s/%s", conf.output_dir_path, BITDIR) ;
+    write_result_maps(bitmaps_dir_path) ;
+#endif
+    
+    print_summary(cov_log_path, trace_cov_path, funcov_dir_path) ;
 }
 
 void
@@ -590,7 +601,7 @@ main (int argc, char * argv[])
     }
     printf("\n") ;
 
-    print_cov_results() ;  // TODO. pc => line#
+    save_final_results() ;  
 
     funcov_destroy() ;
 
