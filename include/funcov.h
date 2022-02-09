@@ -3,7 +3,7 @@
 
 #define PATH_MAX 4096
 #define BUF_SIZE 1024
-#define FUN_NAME_MAX 512 
+#define FUN_NAME_MAX 512
 
 #define LOGNAME "cov.log"
 
@@ -18,6 +18,5 @@ typedef struct config {    // Q. don't need to use a struct?
     int input_file_cnt ;
     char ** input_files ;
 } config_t ;
-
 
 #endif

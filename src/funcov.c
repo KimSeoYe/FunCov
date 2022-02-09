@@ -539,17 +539,18 @@ save_final_results ()
     sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
     write_log_csv(cov_log_path, trace_cov_path) ;
 
-    location_t * translated_locations = (location_t *) malloc(sizeof(location_t) * trace_cov[conf.input_file_cnt - 1]) ;
+    int locations_cnt = trace_cov[conf.input_file_cnt - 1] ;
+    location_t * translated_locations = (location_t *) malloc(sizeof(location_t) * locations_cnt) ;
     if (translated_locations == 0x0) {
         perror("save_final_results: malloc") ;
         remove_shared_mem() ;
         exit(1) ;
     }
-    translate_pc_values(translated_locations) ;  
+    translate_pc_values(translated_locations, locations_cnt, trace_map, conf.binary_path) ;
 
     char funcov_dir_path[PATH_MAX + 32] ;
     sprintf(funcov_dir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;
-    write_covered_funs(funcov_dir_path, translated_locations) ;
+    write_covered_funs(funcov_dir_path, translated_locations) ; // TODO. translated_locations
 
     free(translated_locations) ;
 
