@@ -49,7 +49,7 @@ parse_string (char * cov_string, char ** strings)
 
   char callee_name[STR_BUFF] ;
   char caller_name[STR_BUFF] ;
-  char caller_pc[STR_BUFF] ;
+  char pc_val[STR_BUFF] ;
 
   char * tok ;
   char * next ;
@@ -67,9 +67,9 @@ parse_string (char * cov_string, char ** strings)
 
   tok = strtok_r(NULL, "[", &next) ;
   tok = strtok_r(NULL, "]", &next) ;
-  strcpy(caller_pc, tok) ;
+  strcpy(pc_val, tok) ;
 
-  sprintf(cov_string, "%s,%s,%s", callee_name, caller_name, caller_pc) ;
+  sprintf(cov_string, "%s,%s:%s", callee_name, caller_name, pc_val) ;
 
   return 1 ;
 }
@@ -89,8 +89,8 @@ hash_function (char * cov_string)
 void
 update_map_elem (int row_idx, int col_idx, char * cov_string)
 {
-  curr_stat->shm_map.map[row_idx][col_idx].hit_count++ ;
-  strcpy(curr_stat->shm_map.map[row_idx][col_idx].cov_string, cov_string) ;
+  curr_stat->map[row_idx][col_idx].hit_count++ ;
+  strcpy(curr_stat->map[row_idx][col_idx].cov_string, cov_string) ;
 }
 
 void
@@ -99,27 +99,27 @@ get_coverage (char ** strings)
   curr_stat = attatch_shm(curr_stat_shmid) ;
 
   char cov_string[BUF_SIZE] ;
-  int parse_success = parse_string(cov_string, strings) ;
+  int parse_success = parse_string(cov_string, strings) ; 
 
   if (parse_success) {
     unsigned int id = hash_function(cov_string) ;
      
-    if (curr_stat->shm_map.map[id][0].hit_count == 0) {
+    if (curr_stat->map[id][0].hit_count == 0) {
       update_map_elem(id, 0, cov_string) ;
     }
     else {
       int found = 0 ;
-      for (int i = 0; i < MAP_COL_UNIT; i++) {
-        if (curr_stat->shm_map.map[id][i].hit_count == 0) break ;
-        if (strcmp(curr_stat->shm_map.map[id][i].cov_string, cov_string) == 0) {
+      int i ;
+      for (i = 0; i < MAP_COL_UNIT; i++) {
+        if (curr_stat->map[id][i].hit_count == 0) break ;
+        if (strcmp(curr_stat->map[id][i].cov_string, cov_string) == 0) {
           update_map_elem(id, i, cov_string) ;
           found = 1 ;
         }
       }
 
       if (!found) {
-        int col_idx = ++(curr_stat->shm_map.collision_cnt[id]) ;
-        update_map_elem(id, col_idx, cov_string) ;
+        update_map_elem(id, i, cov_string) ;
       }
     }
   }

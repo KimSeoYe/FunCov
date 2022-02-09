@@ -13,20 +13,22 @@
 #include "../include/shm_coverage.h"
 #include "../include/get_coverage.h"
 
-#define INPUT_CNT_UNIT 512
+// #define SAVE_MAP
 
 #define STDOUT_FD 1
 #define STDERR_FD 2
 
 #define OUTDIR "out"
 #define ERRDIR "err"
-#define BITDIR "bitmaps"    // TODO. change name >> hitmaps
 #define FUNDIR "covered_funs"
+#define BITDIR "bitmaps"    // TODO. change name >> hitmaps
+
+#define INPUT_CNT_UNIT 512
 
 static config_t conf ;
 static cov_stat_t * cov_stats ; // save
 static unsigned int * trace_cov ; 
-static shm_map_t trace_map ;
+map_elem_t trace_map[MAP_ROW_UNIT][MAP_COL_UNIT] ;
 static cov_stat_t * curr_stat ; // shm
 static int curr_stat_shmid ;
 
@@ -230,12 +232,12 @@ funcov_init (int argc, char * argv[])
     cov_stats = (cov_stat_t *) malloc(sizeof(cov_stat_t) * conf.input_file_cnt) ;
     for (int i = 0; i < conf.input_file_cnt; i++) {
         cov_stats[i].fun_coverage = 0 ;
-        memset(&cov_stats[i].shm_map, 0, sizeof(shm_map_t)) ;
+        memset(cov_stats[i].map, 0, sizeof(map_elem_t) * MAP_SIZE) ;
     }
 
     trace_cov = (unsigned int *) malloc(sizeof(unsigned int) * conf.input_file_cnt) ;
     memset(trace_cov, 0, sizeof(unsigned int) * conf.input_file_cnt) ;
-    memset(&trace_map, 0, sizeof(shm_map_t)) ;
+    memset(trace_map, 0, sizeof(map_elem_t) * MAP_SIZE) ;
     
     shm_init() ;
 }
@@ -417,6 +419,12 @@ pipe_err:
 }
 
 void
+translate_pc (char *** translated_locations)
+{
+    
+}
+
+void
 write_log_csv (char * cov_log_path, char * trace_cov_path)
 {
     printf("WRITE %s for...\n", cov_log_path) ;
@@ -479,7 +487,7 @@ write_result_maps(char * bitmaps_dir_path)
 #endif
 
 void
-write_result_funcovs(char * funcov_dir_path) 
+write_covered_funs(char * funcov_dir_path) 
 {
     printf("WRITE %s for...\n", funcov_dir_path) ;
 
@@ -494,16 +502,16 @@ write_result_funcovs(char * funcov_dir_path)
 
         FILE * fp = fopen(funcov_file_path, "wb") ;
         if (fp == 0x0) {
-            perror("write_result_funcovs: fopen") ;
+            perror("write_covered_funs: fopen") ;
             remove_shared_mem() ;
             exit(1) ;
         }
 
-        fprintf(fp, "callee,caller,caller_line\n") ;
+        fprintf(fp, "callee,caller,caller_line\n") ; // current : callee,caller:pc_val
         for (int i = 0; i < MAP_ROW_UNIT; i++) {
             for (int j = 0; j < MAP_COL_UNIT; j++) {
-                if (cov_stats[turn].shm_map.map[i][j].hit_count == 0) break ;
-                fprintf(fp, "%s\n", cov_stats[turn].shm_map.map[i][j].cov_string) ; 
+                if (cov_stats[turn].map[i][j].hit_count == 0) break ;
+                fprintf(fp, "%s\n", cov_stats[turn].map[i][j].cov_string) ; 
             }
         }   
 
@@ -516,23 +524,21 @@ void
 print_cov_results ()
 {
     char cov_log_path[PATH_MAX + 32] ;
-    sprintf(cov_log_path, "%s/%s", conf.output_dir_path, "per_cov_log.csv") ;
-
     char trace_cov_path[PATH_MAX + 32] ;
+    sprintf(cov_log_path, "%s/%s", conf.output_dir_path, "per_cov_log.csv") ;
     sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
-
-    char bitmaps_dir_path[PATH_MAX + 32] ;
-    sprintf(bitmaps_dir_path, "%s/%s", conf.output_dir_path, BITDIR) ;
+    write_log_csv(cov_log_path, trace_cov_path) ;
 
     char funcov_dir_path[PATH_MAX + 32] ;
     sprintf(funcov_dir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;
+    write_covered_funs(funcov_dir_path) ;
 
-    write_log_csv(cov_log_path, trace_cov_path) ;
-#ifdef SAVE_MAP 
+#ifdef SAVE_MAP
+    char bitmaps_dir_path[PATH_MAX + 32] ;
+    sprintf(bitmaps_dir_path, "%s/%s", conf.output_dir_path, BITDIR) ;
     write_result_maps(bitmaps_dir_path) ;
 #endif
-    write_result_funcovs(funcov_dir_path) ;
-
+    
     printf("RESULT SUMMARY\n") ;
     printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
     printf("* TOTAL COVERAGE: %d\n", trace_cov[conf.input_file_cnt - 1]) ;
@@ -575,17 +581,17 @@ main (int argc, char * argv[])
 
         curr_stat->id = turn ;
         curr_stat->exit_code = exit_code ;
-        curr_stat->fun_coverage = count_coverage(&(curr_stat->shm_map)) ;
+        curr_stat->fun_coverage = count_coverage(curr_stat->map) ;
         memcpy(&cov_stats[turn], curr_stat, sizeof(cov_stat_t)) ;
 
-        trace_cov[turn] = get_trace_coverage(&trace_map, curr_stat, trace_cov[turn - 1]) ;
+        trace_cov[turn] = get_trace_coverage(trace_map, curr_stat) ;
         
         printf("cov=%d, acc_cov=%d\n", cov_stats[turn].fun_coverage, trace_cov[turn]) ;
     }
     printf("\n") ;
 
     print_cov_results() ;  // TODO. pc => line#
-    
+
     funcov_destroy() ;
 
     return 0 ;

@@ -6,8 +6,7 @@
 #include <sys/shm.h>
 #include "funcov.h"
 
-#define CURR_KEY 1111
-#define TRACE_KEY 2222
+#define CURR_KEY 1010
 
 #define MAP_ROW_UNIT 2048   // WARNING: memory limit...
 #define MAP_COL_UNIT 64
@@ -18,16 +17,11 @@ typedef struct map_elem {
     char cov_string[BUF_SIZE] ; // "callee,caller,PC"
 } map_elem_t ;
 
-typedef struct shm_map {
-    map_elem_t map[MAP_ROW_UNIT][MAP_COL_UNIT] ;
-    unsigned int collision_cnt[MAP_ROW_UNIT] ;
-} shm_map_t ;
-
 typedef struct cov_stat {
     int id ;
     int exit_code ;
     unsigned int fun_coverage ;
-    shm_map_t shm_map ;
+    map_elem_t map[MAP_ROW_UNIT][MAP_COL_UNIT] ;
 } cov_stat_t ;
 
 int get_shm (int key, int type_size) ;
