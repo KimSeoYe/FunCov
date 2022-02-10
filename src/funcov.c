@@ -422,7 +422,7 @@ pipe_err:
 void
 write_log_csv (char * cov_log_path, char * trace_cov_path)
 {
-    printf("WRITE %s for...\n", cov_log_path) ;
+    printf("WRITE %s ...\n", cov_log_path) ;
     FILE * fp = fopen(cov_log_path, "wb") ;
     if (fp == 0x0) {
         perror("write_log_csv: fopen") ;
@@ -431,13 +431,11 @@ write_log_csv (char * cov_log_path, char * trace_cov_path)
     }
     fprintf(fp, "id,fun_cov,exit_code,filename\n") ;
     for (int i = 0; i < conf.input_file_cnt; i++) {
-        printf("* [%d] %s\n", i, conf.input_files[i]) ;
         fprintf(fp, "%d,%d,%d,\"%s\"\n", cov_stats[i].id, cov_stats[i].fun_coverage, cov_stats[i].exit_code, conf.input_files[i]) ;
     }
     fclose(fp) ;
-    printf("\n") ;
 
-    printf("WRITE %s for...\n", trace_cov_path) ;
+    printf("WRITE %s ...\n", trace_cov_path) ;
     fp = fopen(trace_cov_path, "wb") ;
     if (fp == 0x0) {
         perror("write_log_csv: fopen") ;
@@ -446,11 +444,9 @@ write_log_csv (char * cov_log_path, char * trace_cov_path)
     }
     fprintf(fp, "id,accumulated_cov\n") ;
     for (int i = 0; i < conf.input_file_cnt; i++) {
-        printf("* [%d] %s\n", i, conf.input_files[i]) ;
         fprintf(fp, "%d,%d\n", cov_stats[i].id, trace_cov[i]) ;
     }
     fclose(fp) ;
-    printf("\n") ;
 }
 
 #ifdef SAVE_MAP 
@@ -484,11 +480,9 @@ write_result_maps(char * bitmaps_dir_path)
 void
 write_covered_funs(char * funcov_dir_path, location_t * translated_locations) 
 {
-    printf("WRITE %s for...\n", funcov_dir_path) ;
+    printf("WRITE %s ...\n", funcov_dir_path) ;
 
     for (int turn = 0; turn < conf.input_file_cnt; turn++) {
-        printf("* [%d] %s\n", turn, conf.input_files[turn]) ;
-
         char input_filename[PATH_MAX] ;
         strcpy(input_filename, conf.input_files[turn] + strlen(conf.input_dir_path) + 1) ;
         
@@ -512,13 +506,12 @@ write_covered_funs(char * funcov_dir_path, location_t * translated_locations)
 
         fclose(fp) ;
     }
-    printf("\n") ;
 }
 
 void
 print_summary (char * cov_log_path, char * trace_cov_path, char * funcov_dir_path)
 {
-    printf("RESULT SUMMARY\n") ;
+    printf("\nRESULT SUMMARY\n") ;
     printf("* INITIAL COVERAGE: %d\n", trace_cov[0]) ;
     printf("* TOTAL COVERAGE: %d\n", trace_cov[conf.input_file_cnt - 1]) ;
     printf("* LOG SAVED IN %s\n", cov_log_path) ;
@@ -539,14 +532,20 @@ save_final_results ()
     sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
     write_log_csv(cov_log_path, trace_cov_path) ;
 
-    int locations_cnt = trace_cov[conf.input_file_cnt - 1] ;
-    location_t * translated_locations = (location_t *) malloc(sizeof(location_t) * locations_cnt) ;
+    
+    location_t * translated_locations = (location_t *) malloc(sizeof(location_t) * MAP_ROW_UNIT) ; // => TODO. use hash ?
     if (translated_locations == 0x0) {
         perror("save_final_results: malloc") ;
         remove_shared_mem() ;
         exit(1) ;
     }
-    translate_pc_values(translated_locations, locations_cnt, trace_map, conf.binary_path) ;
+
+    int cov_cnt = trace_cov[conf.input_file_cnt - 1] ;
+    int translate_success = translate_pc_values(translated_locations, cov_cnt, trace_map, conf.binary_path) ;
+    if (translate_success == -1) {
+        remove_shared_mem() ;
+        exit(1) ;
+    }
 
     char funcov_dir_path[PATH_MAX + 32] ;
     sprintf(funcov_dir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;

@@ -69,13 +69,13 @@ parse_string (char * cov_string, char ** strings)
   tok = strtok_r(NULL, "]", &next) ;
   strcpy(pc_val, tok) ;
 
-  sprintf(cov_string, "%s,%s:%s", callee_name, caller_name, pc_val) ;
+  sprintf(cov_string, "%s,%s,%s", callee_name, caller_name, pc_val) ;
 
   return 1 ;
 }
 
 unsigned short
-hash16 (char * cov_string)
+hash16 (char * cov_string)  // TODO. not tested
 {
   unsigned int h = 0 ;
 
@@ -103,7 +103,6 @@ get_coverage (char ** strings)
 
   if (parse_success) {
     unsigned short id = hash16(cov_string) ;
-    printf("id: %d\n", id) ;
      
     if (curr_stat->map[id][0].hit_count == 0) {
       update_map_elem(id, 0, cov_string) ;

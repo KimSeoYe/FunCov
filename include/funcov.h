@@ -3,7 +3,7 @@
 
 #define PATH_MAX 4096
 #define BUF_SIZE 1024
-#define FUN_NAME_MAX 512
+#define FUN_NAME_MAX 256
 
 #define LOGNAME "cov.log"
 

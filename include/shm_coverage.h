@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/types.h>
 #include "funcov.h"
 
 #define CURR_KEY 1010
@@ -11,10 +12,11 @@
 #define MAP_ROW_UNIT 65536   // WARNING: memory limit...
 #define MAP_COL_UNIT 2
 #define MAP_SIZE MAP_ROW_UNIT * MAP_COL_UNIT 
+#define COV_STRING_MAX 512
 
 typedef struct map_elem {
-    unsigned int hit_count ;
-    char cov_string[BUF_SIZE] ; // "callee,caller,PC"
+    uint8_t hit_count ;
+    char cov_string[COV_STRING_MAX] ; // "callee,caller,PC"
 } map_elem_t ;
 
 typedef struct cov_stat {
