@@ -64,7 +64,7 @@ execute_addr2line (char ** argv)
 	return 0 ;
 }
 
-void
+int
 save_locations (location_t * translated_locations, char ** argv, int cov_cnt)
 {
 	close(in_pipe[0]) ;
@@ -73,34 +73,37 @@ save_locations (location_t * translated_locations, char ** argv, int cov_cnt)
     close(out_pipe[1]) ;
     close(err_pipe[1]) ;
 
-	char buf[BUF_SIZE] ;
-	char line[BUF_SIZE] ;
-	
-	int cnt = 0 ;
-	int line_idx = 0 ;
-	int buf_idx = 0 ;
-	int s = 0 ;
-
-	while ((s = read(out_pipe[0], buf, BUF_SIZE)) > 0) {
-		for (buf_idx = 0; buf_idx < s; buf_idx++, line_idx++) {
-			if (buf[buf_idx] == '\n') {
-				line[line_idx] = 0x0 ;
-
-				unsigned short id = hash16(argv[cnt + 3]) ;	// TODO. hash collision
-				strcpy(translated_locations[id].pc_val, argv[cnt + 3]) ;
-				strcpy(translated_locations[id].location, line) ;
-
-				line_idx = -1 ;
-				cnt++ ;
-			}
-			else {
-				line[line_idx] = buf[buf_idx] ;
-			}
-		}
-		memset(buf, 0, BUF_SIZE) ;
+	FILE * fp = fdopen(out_pipe[0], "rb") ;
+	if (fp == 0x0) {
+		perror("translate_pc_values: save_locations: fdopen") ;
+		return -1 ;
 	}
 
-	close(out_pipe[0]) ;
+	char buf[BUF_SIZE] ;
+
+	for (int cnt = 0; fgets(buf, BUF_SIZE, fp) != 0x0; cnt++) {
+		int len = strlen(buf) ;
+		buf[len - 1] = 0x0 ;
+
+		int found = 0 ;
+		unsigned short id = hash16(argv[cnt + 3]) ;	// TODO. hash collision
+		for (int i = 0; i < MAP_ROW_UNIT; i++) {
+			if (translated_locations[id].not_empty) id++ ;
+			else {
+				strcpy(translated_locations[id].pc_val, argv[cnt + 3]) ;
+				strcpy(translated_locations[id].location, buf) ;
+				found = 1 ;
+			}
+		}
+		if (!found) {
+			perror("translate_pc_values: save_locations: map limit") ;
+			return -1 ;
+		}
+	}
+
+	fclose(fp) ;
+
+	return 0 ;
 }
 
 int
@@ -135,7 +138,7 @@ translate_pc_values (location_t * translated_locations, int cov_cnt, map_elem_t 
 		if (execute_addr2line(argv) == -1) return -1 ;
 	}
 	else if (child_pid > 0) {
-		save_locations (translated_locations, argv, cov_cnt) ;
+		if (save_locations (translated_locations, argv, cov_cnt) == -1) return -1 ;
 	}
 	else {
 		perror("translate_pc_values: fork") ;

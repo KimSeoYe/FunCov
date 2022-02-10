@@ -539,6 +539,7 @@ save_final_results ()
         remove_shared_mem() ;
         exit(1) ;
     }
+    memset(translated_locations, 0, sizeof(location_t) * MAP_ROW_UNIT) ;
 
     int cov_cnt = trace_cov[conf.input_file_cnt - 1] ;
     int translate_success = translate_pc_values(translated_locations, cov_cnt, trace_map, conf.binary_path) ;

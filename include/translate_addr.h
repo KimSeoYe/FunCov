@@ -7,6 +7,7 @@
 #define ADDR_MAX 16
 
 typedef struct location {
+    uint8_t not_empty ;
     char pc_val[ADDR_MAX] ;
     char location[PATH_MAX] ;
 } location_t ;
