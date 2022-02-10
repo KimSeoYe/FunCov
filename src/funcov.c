@@ -496,11 +496,19 @@ write_covered_funs(char * funcov_dir_path, location_t * translated_locations)
             exit(1) ;
         }
 
-        fprintf(fp, "callee,caller,caller_line\n") ; // current : callee,caller:pc_val
+        fprintf(fp, "callee,caller,pc_val,called_location\n") ; 
         for (int i = 0; i < MAP_ROW_UNIT; i++) {
             for (int j = 0; j < MAP_COL_UNIT; j++) {
                 if (cov_stats[turn].map[i][j].hit_count == 0) break ;
-                fprintf(fp, "%s\n", cov_stats[turn].map[i][j].cov_string) ; 
+                
+                fprintf(fp, "%s,", cov_stats[turn].map[i][j].cov_string) ; 
+                
+                char location[PATH_MAX] ;
+                if (find_location_info(location, translated_locations, cov_stats[turn].map[i][j].cov_string) == -1) {
+                    remove_shared_mem() ;
+                    exit(1) ;
+                }
+                fprintf(fp, "%s\n", location) ;
             }
         }   
 
@@ -533,7 +541,7 @@ save_final_results ()
     write_log_csv(cov_log_path, trace_cov_path) ;
 
     
-    location_t * translated_locations = (location_t *) malloc(sizeof(location_t) * MAP_ROW_UNIT) ; // => TODO. use hash ?
+    location_t * translated_locations = (location_t *) malloc(sizeof(location_t) * MAP_ROW_UNIT) ;
     if (translated_locations == 0x0) {
         perror("save_final_results: malloc") ;
         remove_shared_mem() ;

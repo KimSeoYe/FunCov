@@ -20,6 +20,18 @@ hash16 (char * key)  // TODO. not tested
 }
 
 void
+get_pc_val (char * dst, char * src)
+{
+	char copied_string[COV_STRING_MAX] ;
+	strcpy(copied_string, src) ;
+
+	char * next = 0x0 ;
+	char * tok = strtok_r(copied_string, ",", &next) ;
+	tok = strtok_r(NULL, ",", &next) ;
+	strcpy(dst, next) ;
+}
+
+void
 tokenize_cov_strings (char ** argv, int cov_cnt, map_elem_t trace_map[][MAP_COL_UNIT])
 {
 	int index = 3 ;
@@ -27,18 +39,10 @@ tokenize_cov_strings (char ** argv, int cov_cnt, map_elem_t trace_map[][MAP_COL_
 	for (int r = 0; r < MAP_ROW_UNIT; r++) {
 		for (int c = 0; c < MAP_COL_UNIT; c++) {
 			if (trace_map[r][c].hit_count == 0) break ;
-
-			char copied_string[COV_STRING_MAX] ;
-			strcpy(copied_string, trace_map[r][c].cov_string) ;
-
-			char * next = 0x0 ;
-			char * tok = strtok_r(copied_string, ",", &next) ;
-			tok = strtok_r(NULL, ",", &next) ;
-			strcpy(argv[index], next) ;
+			get_pc_val(argv[index], trace_map[r][c].cov_string) ;
 			index++ ;
 		}
 	}
-
 }
 
 static int in_pipe[2] ;
@@ -86,13 +90,17 @@ save_locations (location_t * translated_locations, char ** argv, int cov_cnt)
 		buf[len - 1] = 0x0 ;
 
 		int found = 0 ;
-		unsigned short id = hash16(argv[cnt + 3]) ;	// TODO. hash collision
+		unsigned short id = hash16(argv[cnt + 3]) ;
 		for (int i = 0; i < MAP_ROW_UNIT; i++) {
-			if (translated_locations[id].not_empty) id++ ;
+			if (id >= MAP_ROW_UNIT) id = 0 ;
+
+			if (translated_locations[id].exist) id++ ;
 			else {
 				strcpy(translated_locations[id].pc_val, argv[cnt + 3]) ;
 				strcpy(translated_locations[id].location, buf) ;
+				translated_locations[id].exist = 1 ;
 				found = 1 ;
+				break ;
 			}
 		}
 		if (!found) {
@@ -157,4 +165,32 @@ translate_pc_values (location_t * translated_locations, int cov_cnt, map_elem_t 
 pipe_err:
 	perror("run: pipe") ;
 	return -1 ;
+}
+
+int
+find_location_info (char * dst, location_t * translated_locations, char * cov_string)
+{
+    char pc_val[ADDR_MAX] ;
+    get_pc_val(pc_val, cov_string) ;
+
+    int found = 0 ;
+    unsigned short id = hash16(pc_val) ;
+    for (int i = 0; i < MAP_ROW_UNIT; i++) {
+        if (id >= MAP_ROW_UNIT) id = 0 ;
+        if (!translated_locations[id].exist) goto not_found ;
+
+        if (strcmp(pc_val, translated_locations[id].pc_val) == 0) {
+            strcpy(dst, translated_locations[id].location) ;
+            found = 1 ;
+            break ;
+        }
+        else id++ ;
+    }
+    if (!found) goto not_found ;
+
+    return 0 ;
+
+not_found:
+    perror("find_location_info: Translated value does not exist") ;
+    return -1 ;
 }
