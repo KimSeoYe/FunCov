@@ -8,8 +8,8 @@
 
 #define CURR_KEY 1010
 
-#define MAP_ROW_UNIT 2048   // WARNING: memory limit...
-#define MAP_COL_UNIT 32
+#define MAP_ROW_UNIT 65536   // WARNING: memory limit...
+#define MAP_COL_UNIT 2
 #define MAP_SIZE MAP_ROW_UNIT * MAP_COL_UNIT 
 
 typedef struct map_elem {

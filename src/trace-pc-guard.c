@@ -74,16 +74,16 @@ parse_string (char * cov_string, char ** strings)
   return 1 ;
 }
 
-unsigned int
-hash_function (char * cov_string)
+unsigned short
+hash16 (char * cov_string)
 {
-  unsigned int value = 0 ;
+  unsigned int h = 0 ;
 
-  for (int i = 0; i < strlen(cov_string); i++) {
-    value = cov_string[i] + 31 * value ;
+  while (*cov_string) {
+    h = h * 23131 + (unsigned char)*cov_string++ ;
   }
 
-  return value % MAP_ROW_UNIT ;
+  return (h & 0xffff) ;
 }
 
 void
@@ -102,7 +102,8 @@ get_coverage (char ** strings)
   int parse_success = parse_string(cov_string, strings) ; 
 
   if (parse_success) {
-    unsigned int id = hash_function(cov_string) ;
+    unsigned short id = hash16(cov_string) ;
+    printf("id: %d\n", id) ;
      
     if (curr_stat->map[id][0].hit_count == 0) {
       update_map_elem(id, 0, cov_string) ;
