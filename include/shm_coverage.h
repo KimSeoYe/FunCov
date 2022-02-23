@@ -9,7 +9,6 @@
 
 #define CURR_KEY 1010
 
-// #define MAP_ROW_UNIT 65536   // WARNING: memory limit...
 #define MAP_SIZE 65536
 #define COV_STRING_MAX 512
 
