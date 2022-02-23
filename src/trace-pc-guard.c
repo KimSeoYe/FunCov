@@ -87,44 +87,43 @@ hash16 (char * cov_string)  // TODO. not tested
 }
 
 void
-update_map_elem (int row_idx, int col_idx, char * cov_string)
-{
-  curr_stat->map[row_idx][col_idx].hit_count++ ;
-  strcpy(curr_stat->map[row_idx][col_idx].cov_string, cov_string) ;
-}
-
-void
 get_coverage (char ** strings)
 {
-  curr_stat = attatch_shm(curr_stat_shmid) ;
+	curr_stat = attatch_shm(curr_stat_shmid) ;
 
-  char cov_string[BUF_SIZE] ;
-  int parse_success = parse_string(cov_string, strings) ; 
+	char cov_string[BUF_SIZE] ;
+	int parse_success = parse_string(cov_string, strings) ; 
 
-  if (parse_success) {
-    unsigned short id = hash16(cov_string) ;
-     
-    if (curr_stat->map[id][0].hit_count == 0) {
-      update_map_elem(id, 0, cov_string) ;
-    }
-    else {
-      int found = 0 ;
-      int i ;
-      for (i = 0; i < MAP_COL_UNIT; i++) {
-        if (curr_stat->map[id][i].hit_count == 0) break ;
-        if (strcmp(curr_stat->map[id][i].cov_string, cov_string) == 0) {
-          update_map_elem(id, i, cov_string) ;
-          found = 1 ;
-        }
-      }
+	if (parse_success) {
+		unsigned int id = hash16(cov_string) ;
 
-      if (!found) {
-        update_map_elem(id, i, cov_string) ;
-      }
-    }
-  }
+		int found = 0 ;
+		for (int i = 0; i < MAP_SIZE; i++) {
+			if (id >= MAP_SIZE) {
+				id = 0 ;
+				continue ;
+			}
 
-  detatch_shm(curr_stat) ;
+			if (curr_stat->map[id].hit_count == 0) {
+				strcpy(curr_stat->map[id].cov_string, cov_string) ;
+				curr_stat->map[id].hit_count++ ;
+				found = 1 ;
+				break ;
+			}
+			else if (strcmp(curr_stat->map[id].cov_string, cov_string) == 0) {
+				curr_stat->map[id].hit_count++ ;
+				found = 1 ;
+				break ;
+			}
+			else id++ ;
+		}
+		if (!found) {
+			perror("get_coverage: map limit") ;
+			exit(1) ; 
+		}
+	}
+
+	detatch_shm(curr_stat) ;
 }
 
 extern void 

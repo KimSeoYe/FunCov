@@ -32,14 +32,13 @@ get_pc_val (char * dst, char * src)
 }
 
 void
-tokenize_cov_strings (char ** argv, int cov_cnt, map_elem_t trace_map[][MAP_COL_UNIT])
+tokenize_cov_strings (char ** argv, int cov_cnt, map_elem_t * trace_map)
 {
 	int index = 3 ;
 
-	for (int r = 0; r < MAP_ROW_UNIT; r++) {
-		for (int c = 0; c < MAP_COL_UNIT; c++) {
-			if (trace_map[r][c].hit_count == 0) break ;
-			get_pc_val(argv[index], trace_map[r][c].cov_string) ;
+	for (int i = 0; i < MAP_SIZE; i++) {
+		if (trace_map[i].hit_count != 0) {
+			get_pc_val(argv[index], trace_map[i].cov_string) ;
 			index++ ;
 		}
 	}
@@ -91,8 +90,8 @@ save_locations (location_t * translated_locations, char ** argv, int cov_cnt)
 
 		int found = 0 ;
 		unsigned short id = hash16(argv[cnt + 3]) ;
-		for (int i = 0; i < MAP_ROW_UNIT; i++) {
-			if (id >= MAP_ROW_UNIT) id = 0 ;
+		for (int i = 0; i < MAP_SIZE; i++) {
+			if (id >= MAP_SIZE) id = 0 ;
 
 			if (translated_locations[id].exist) id++ ;
 			else {
@@ -115,7 +114,7 @@ save_locations (location_t * translated_locations, char ** argv, int cov_cnt)
 }
 
 int
-translate_pc_values (location_t * translated_locations, int cov_cnt, map_elem_t trace_map[][MAP_COL_UNIT], char * binary_path)
+translate_pc_values (location_t * translated_locations, int cov_cnt, map_elem_t * trace_map, char * binary_path)
 {
 	char ** argv = (char **) malloc(sizeof(char *) * (cov_cnt + 4)) ;
 
@@ -175,8 +174,8 @@ find_location_info (char * dst, location_t * translated_locations, char * cov_st
 
     int found = 0 ;
     unsigned short id = hash16(pc_val) ;
-    for (int i = 0; i < MAP_ROW_UNIT; i++) {
-        if (id >= MAP_ROW_UNIT) id = 0 ;
+    for (int i = 0; i < MAP_SIZE; i++) {
+        if (id >= MAP_SIZE) id = 0 ;
         if (!translated_locations[id].exist) goto not_found ;
 
         if (strcmp(pc_val, translated_locations[id].pc_val) == 0) {
