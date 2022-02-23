@@ -29,7 +29,6 @@
 static config_t conf ;
 static cov_stat_t * cov_stats ; // save
 static unsigned int * trace_cov ; 
-// map_elem_t trace_map[MAP_ROW_UNIT][MAP_COL_UNIT] ;
 map_elem_t trace_map[MAP_SIZE] ;
 static cov_stat_t * curr_stat ; // shm
 static int curr_stat_shmid ;
@@ -601,7 +600,13 @@ main (int argc, char * argv[])
         curr_stat->fun_coverage = count_coverage(curr_stat->map) ;
         memcpy(&cov_stats[turn], curr_stat, sizeof(cov_stat_t)) ;
 
-        trace_cov[turn] = get_trace_coverage(trace_map, curr_stat) ;
+        unsigned int prev_cov = 0 ;
+        if (turn > 0) prev_cov = trace_cov[turn - 1] ;
+        trace_cov[turn] = get_trace_coverage(prev_cov, trace_map, curr_stat) ;
+        if (trace_cov[turn] == -1) {
+            remove_shared_mem() ;
+            exit(1) ;
+        }
         
         printf("cov=%d, acc_cov=%d\n", cov_stats[turn].fun_coverage, trace_cov[turn]) ;
     }

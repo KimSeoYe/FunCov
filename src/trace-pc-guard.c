@@ -24,13 +24,13 @@ static int curr_stat_shmid ;
 extern void 
 __sanitizer_cov_trace_pc_guard_init(uint32_t *start, uint32_t *stop) 
 {
-  static uint64_t N;  
-  if (start == stop || *start) return;  
+	static uint64_t N;  
+	if (start == stop || *start) return;  
 
-  for (uint32_t *x = start; x < stop; x++)
-    *x = ++N;  
+	for (uint32_t *x = start; x < stop; x++)
+		*x = ++N;  
 
-  curr_stat_shmid = get_shm(CURR_KEY, sizeof(cov_stat_t)) ;
+	curr_stat_shmid = get_shm(CURR_KEY, sizeof(cov_stat_t)) ;
 }
 
 /**
@@ -42,48 +42,48 @@ __sanitizer_cov_trace_pc_guard_init(uint32_t *start, uint32_t *stop)
 int
 parse_string (char * cov_string, char ** strings)
 {
-  char callee[PATH_MAX] ;
-  char caller[PATH_MAX] ;
-  strcpy(callee, strings[2]) ;
-  strcpy(caller, strings[3]) ;
+	char callee[PATH_MAX] ;
+	char caller[PATH_MAX] ;
+	strcpy(callee, strings[2]) ;
+	strcpy(caller, strings[3]) ;
 
-  char callee_name[STR_BUFF] ;
-  char caller_name[STR_BUFF] ;
-  char pc_val[STR_BUFF] ;
+	char callee_name[STR_BUFF] ;
+	char caller_name[STR_BUFF] ;
+	char pc_val[STR_BUFF] ;
 
-  char * tok ;
-  char * next ;
+	char * tok ;
+	char * next ;
 
-  if (strstr(callee, "+") == 0x0 || strstr(caller, "+") == 0x0) return 0 ;
+	if (strstr(callee, "+") == 0x0 || strstr(caller, "+") == 0x0) return 0 ;
 
-  tok = strtok_r(callee, "(", &next) ;
-  tok = strtok_r(NULL, "+", &next) ;
-  strcpy(callee_name, tok) ;
-  if (strcmp(callee_name, "main") == 0) return 0 ;
-  
-  tok = strtok_r(caller, "(", &next) ;
-  tok = strtok_r(NULL, "+", &next) ;
-  strcpy(caller_name, tok) ;
+	tok = strtok_r(callee, "(", &next) ;
+	tok = strtok_r(NULL, "+", &next) ;
+	strcpy(callee_name, tok) ;
+	if (strcmp(callee_name, "main") == 0) return 0 ;
 
-  tok = strtok_r(NULL, "[", &next) ;
-  tok = strtok_r(NULL, "]", &next) ;
-  strcpy(pc_val, tok) ;
+	tok = strtok_r(caller, "(", &next) ;
+	tok = strtok_r(NULL, "+", &next) ;
+	strcpy(caller_name, tok) ;
 
-  sprintf(cov_string, "%s,%s,%s", callee_name, caller_name, pc_val) ;
+	tok = strtok_r(NULL, "[", &next) ;
+	tok = strtok_r(NULL, "]", &next) ;
+	strcpy(pc_val, tok) ;
 
-  return 1 ;
+	sprintf(cov_string, "%s,%s,%s", callee_name, caller_name, pc_val) ;
+
+	return 1 ;
 }
 
 unsigned short
 hash16 (char * cov_string)  // TODO. not tested
 {
-  unsigned int h = 0 ;
+	unsigned int h = 0 ;
 
-  while (*cov_string) {
-    h = h * 23131 + (unsigned char)*cov_string++ ;
-  }
+	while (*cov_string) {
+		h = h * 23131 + (unsigned char)*cov_string++ ;
+	}
 
-  return (h & 0xffff) ;
+	return (h & 0xffff) ;
 }
 
 void
@@ -129,20 +129,20 @@ get_coverage (char ** strings)
 extern void 
 __sanitizer_cov_trace_pc_guard(uint32_t *guard) 
 {
-  if (!*guard) return;  
+	if (!*guard) return;  
 
-  size_t nptrs ;
-  void * buffer[BT_BUF_SIZE] ;
-  char ** strings ;
+	size_t nptrs ;
+	void * buffer[BT_BUF_SIZE] ;
+	char ** strings ;
 
-  nptrs = backtrace(buffer, BT_BUF_SIZE) ;
-  strings = backtrace_symbols(buffer, nptrs) ;
-  if (strings == 0x0) {
-    perror("__sanitizer_cov_trace_pc_guard: backtrace_symbols") ;
-    exit(1) ;
-  }
+	nptrs = backtrace(buffer, BT_BUF_SIZE) ;
+	strings = backtrace_symbols(buffer, nptrs) ;
+	if (strings == 0x0) {
+		perror("__sanitizer_cov_trace_pc_guard: backtrace_symbols") ;
+		exit(1) ;
+	}
 
-  get_coverage(strings) ;
-  
-  free(strings) ;
+	get_coverage(strings) ;
+
+	free(strings) ;
 }
