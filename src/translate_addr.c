@@ -38,7 +38,7 @@ tokenize_cov_strings (char ** argv, int cov_cnt, map_elem_t * trace_map)
 
 	for (int i = 0; i < MAP_SIZE; i++) {
 		if (trace_map[i].hit_count != 0) {
-			get_pc_val(argv[index], trace_map[i].cov_string) ;
+			get_pc_val(argv[index], trace_map[i].cov_string) ;	// TODO. pass the address?
 			index++ ;
 		}
 	}

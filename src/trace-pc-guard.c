@@ -66,7 +66,7 @@ parse_string (char * cov_string, char ** strings)
 	strcpy(caller_name, tok) ;
 
 	tok = strtok_r(NULL, "[", &next) ;
-	tok = strtok_r(NULL, "]", &next) ;
+	tok = strok_r(NULL, "]", &next) ;
 	strcpy(pc_val, tok) ;
 
 	sprintf(cov_string, "%s,%s,%s", callee_name, caller_name, pc_val) ;

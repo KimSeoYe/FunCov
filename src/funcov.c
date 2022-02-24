@@ -231,10 +231,7 @@ funcov_init (int argc, char * argv[])
     print_config() ;
 
     cov_stats = (cov_stat_t *) malloc(sizeof(cov_stat_t) * conf.input_file_cnt) ;
-    for (int i = 0; i < conf.input_file_cnt; i++) {
-        cov_stats[i].fun_coverage = 0 ;
-        memset(cov_stats[i].map, 0, sizeof(map_elem_t) * MAP_SIZE) ;
-    }
+    memset(cov_stats, 0, sizeof(cov_stat_t) * conf.input_file_cnt) ;
 
     trace_cov = (unsigned int *) malloc(sizeof(unsigned int) * conf.input_file_cnt) ;
     memset(trace_cov, 0, sizeof(unsigned int) * conf.input_file_cnt) ;
@@ -258,7 +255,7 @@ timeout_handler (int sig)
         if (kill(child_pid, SIGINT) == -1) {
             perror("timeout_handler: kill") ;
             remove_shared_mem() ;
-            exit(1) ;
+            exit(1) ;   // Q.
         }
     }
 }
@@ -476,7 +473,7 @@ write_result_maps(char * bitmaps_dir_path)
 #endif
 
 void
-write_covered_funs(char * funcov_dir_path, location_t * translated_locations) 
+write_covered_funs_csv(char * funcov_dir_path, location_t * translated_locations) 
 {
     printf("WRITE %s ...\n", funcov_dir_path) ;
 
@@ -489,7 +486,7 @@ write_covered_funs(char * funcov_dir_path, location_t * translated_locations)
 
         FILE * fp = fopen(funcov_file_path, "wb") ;
         if (fp == 0x0) {
-            perror("write_covered_funs: fopen") ;
+            perror("write_covered_funs_csv: fopen") ;
             remove_shared_mem() ;
             exit(1) ;
         }
@@ -536,7 +533,6 @@ save_final_results ()
     sprintf(trace_cov_path, "%s/%s", conf.output_dir_path, "trace_cov_log.csv") ;
     write_log_csv(cov_log_path, trace_cov_path) ;
 
-    
     location_t * translated_locations = (location_t *) malloc(sizeof(location_t) *  MAP_SIZE) ;
     if (translated_locations == 0x0) {
         perror("save_final_results: malloc") ;
@@ -554,7 +550,7 @@ save_final_results ()
 
     char funcov_dir_path[PATH_MAX + 32] ;
     sprintf(funcov_dir_path, "%s/%s", conf.output_dir_path, FUNDIR) ;
-    write_covered_funs(funcov_dir_path, translated_locations) ; // TODO. translated_locations
+    write_covered_funs_csv(funcov_dir_path, translated_locations) ; // TODO. translated_locations
 
     free(translated_locations) ;
 
