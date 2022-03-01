@@ -30,7 +30,8 @@ __sanitizer_cov_trace_pc_guard_init(uint32_t *start, uint32_t *stop)
 	for (uint32_t *x = start; x < stop; x++)
 		*x = ++N;  
 
-	curr_stat_shmid = get_shm(CURR_KEY, sizeof(cov_stat_t)) ;
+	// curr_stat_shmid = get_shm(CURR_KEY, sizeof(cov_stat_t)) ;
+	curr_stat_shmid = get_shm(USE, sizeof(cov_stat_t)) ;
 }
 
 /**
@@ -66,7 +67,7 @@ parse_string (char * cov_string, char ** strings)
 	strcpy(caller_name, tok) ;
 
 	tok = strtok_r(NULL, "[", &next) ;
-	tok = strok_r(NULL, "]", &next) ;
+	tok = strtok_r(NULL, "]", &next) ;
 	strcpy(pc_val, tok) ;
 
 	sprintf(cov_string, "%s,%s,%s", callee_name, caller_name, pc_val) ;

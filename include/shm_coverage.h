@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include "funcov.h"
 
-#define CURR_KEY 1010
+#define SHM_ENV_VAR "__AFL_SHM_ID"
 
 #define MAP_SIZE 65536
 #define COV_STRING_MAX 512
@@ -24,7 +24,12 @@ typedef struct cov_stat {
     map_elem_t map[MAP_SIZE] ;
 } cov_stat_t ;
 
-int get_shm (int key, int type_size) ;
+typedef enum shm {
+    INIT = 0,
+    USE
+} shm_t ;
+
+int get_shm (shm_t type, int type_size) ;
 void * attatch_shm (int shm_id) ;
 void detatch_shm (void * shm_addr) ;
 void remove_shm (int shm_id) ;

@@ -217,7 +217,7 @@ remove_shared_mem ()
 void
 shm_init ()
 {
-    curr_stat_shmid = get_shm(CURR_KEY, sizeof(cov_stat_t)) ;
+    curr_stat_shmid = get_shm(INIT, sizeof(cov_stat_t)) ;
     curr_stat = attatch_shm(curr_stat_shmid) ;
     memset(curr_stat, 0, sizeof(cov_stat_t)) ;
 }

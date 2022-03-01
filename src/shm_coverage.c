@@ -7,16 +7,24 @@
 #include "../include/shm_coverage.h"
 
 int
-get_shm (int key, int type_size)
+get_shm (shm_t type, int type_size)
 {
     int shm_id ;
-    shm_id = shmget((key_t) key, type_size, IPC_CREAT | IPC_EXCL | 0666) ;  
-    if (shm_id == -1) { // already exist
-        shm_id = shmget((key_t) key, type_size, IPC_CREAT | 0666) ;
-        if (shm_id == -1) {
+
+    if (type == INIT) {
+        shm_id = shmget(IPC_PRIVATE, type_size, IPC_CREAT | IPC_EXCL | 0666) ;  
+        if (shm_id == -1) { // already exist
             perror("get_shm: shmget") ;
             exit(1) ;
         }
+
+        char id_str[64] ;
+        sprintf(id_str, "%d", shm_id) ;
+        setenv(SHM_ENV_VAR, id_str, 1) ;
+    }
+    else if (type == USE) {
+        char * id_str_p = getenv(SHM_ENV_VAR) ;
+        shm_id = atoi(id_str_p) ;
     }
 
     return shm_id ;
